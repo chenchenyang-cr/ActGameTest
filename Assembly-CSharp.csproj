@@ -66,6 +66,7 @@
     <Compile Include="Assets\CombatEditor\Scripts\Examples\ExampleTopdownHitBox.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\Splines.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Examples\Example2DFightingHitBox.cs" />
+    <Compile Include="Assets\Script\playerController\RootMotionDriver.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Attribute\MyAnimationCurveAttribute.cs" />
     <Compile Include="Assets\Script\Move\MoveData.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\EventReceiver.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_DynamicTrail.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AnimEventEffectExecutor\AnimSpeedExecutor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityPreview\AbilityEventPreview_Particles.cs" />
+    <Compile Include="Assets\Script\playerController\CinemachineRightMousePOVInput.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\NodeFollower.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\SandBox\HitBox.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\AnimEventHandler.cs" />
@@ -105,6 +107,7 @@
     <Compile Include="Assets\CombatEditor\Scripts\Attribute\AbilityEventAttribute.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\SandBox\FollowTarget.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityPreview\AbilityEventPreview_DynamicTrail.cs" />
+    <Compile Include="Assets\Script\playerController\ThirdPersonOrbitCamera.cs" />
     <Compile Include="Assets\Script\Move\MoveExecutor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\PreviewHandles\ColliderPreviewHandle.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\ReadOnlyAttribute.cs" />
@@ -989,6 +992,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="com.unity.cinemachine.editor">
+      <HintPath>Library\ScriptAssemblies\com.unity.cinemachine.editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
       <Private>False</Private>
@@ -1135,6 +1142,10 @@
     </Reference>
     <Reference Include="Unity.VSCode.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.VSCode.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Cinemachine">
+      <HintPath>Library\ScriptAssemblies\Cinemachine.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Editor">

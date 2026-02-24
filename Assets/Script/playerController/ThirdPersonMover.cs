@@ -1,57 +1,61 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
 public class ThirdPersonMover : MonoBehaviour
 {
-    [Header("Move")]
-    public float moveSpeed = 5.5f;
+    [Header("Animator")]
+    public Animator animator;
+    public string paramMoveX = "MoveX";
+    public string paramMoveZ = "MoveZ";
+    public string paramSpeed = "Speed";
+    public float paramDamp = 0.08f;
 
-    [Tooltip("转向速度（越大转得越快）。")]
+    [Header("Move Input")]
+    public float maxSpeed = 1.0f;
+
+    [Tooltip("Rotation speed; higher is faster.")]
     public float rotationSpeed = 12f;
 
-    [Tooltip("是否朝向移动方向。第三人称一般建议开启。")]
+    [Tooltip("If true, face move direction.")]
     public bool faceMoveDirection = true;
 
-    [Header("Gravity")]
-    public float gravity = -20f;
-    public float groundedStick = -2f; // 贴地速度，避免轻微离地导致抖动
-
-    public bool IsGrounded => _cc.isGrounded;
-
-    private CharacterController _cc;
-    private Vector3 _verticalVel;
+    public Vector3 MoveDirection { get; private set; }
+    public float MoveSpeed01 { get; private set; }
 
     void Awake()
     {
-        _cc = GetComponent<CharacterController>();
+        if (animator == null) animator = GetComponentInChildren<Animator>();
     }
 
     void Update()
     {
-        // 1) 输入：世界坐标轴移动（不依赖相机）
+        // Input: camera-relative movement on XZ plane.
         float h = Input.GetAxisRaw("Horizontal"); // A/D
         float v = Input.GetAxisRaw("Vertical");   // W/S
 
         Vector3 input = new Vector3(h, 0f, v);
         if (input.sqrMagnitude > 1f) input.Normalize();
 
-        Vector3 moveDir = input; // 世界 XZ 方向
-
-        // 2) 朝向移动方向（可选）
-        if (faceMoveDirection && moveDir.sqrMagnitude > 0.0001f)
+        Vector3 moveDir = input;
+        if (Camera.main != null)
         {
-            Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+            Vector3 camForward = Camera.main.transform.forward;
+            Vector3 camRight = Camera.main.transform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            camForward.Normalize();
+            camRight.Normalize();
+            moveDir = camForward * input.z + camRight * input.x;
         }
 
-        // 3) 重力（保证 grounded 稳定）
-        if (_cc.isGrounded && _verticalVel.y < 0f)
-            _verticalVel.y = groundedStick;
+        MoveDirection = moveDir;
+        MoveSpeed01 = Mathf.Clamp01(input.magnitude) * maxSpeed;
 
-        _verticalVel.y += gravity * Time.deltaTime;
-
-        // 4) Move
-        Vector3 velocity = moveDir * moveSpeed + _verticalVel;
-        _cc.Move(velocity * Time.deltaTime);
+        // Only set Animator parameters; actual motion is from Root Motion.
+        if (animator != null)
+        {
+            animator.SetFloat(paramMoveX, MoveDirection.x, paramDamp, Time.deltaTime);
+            animator.SetFloat(paramMoveZ, MoveDirection.z, paramDamp, Time.deltaTime);
+            animator.SetFloat(paramSpeed, MoveSpeed01, paramDamp, Time.deltaTime);
+        }
     }
 }
