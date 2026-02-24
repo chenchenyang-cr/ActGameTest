@@ -125,6 +125,7 @@
     <None Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventTemplate.txt" />
     <None Include="Assets\CombatEditor\Materials\Shaders\ScalableRoundShader.shader" />
     <None Include="Assets\Shader\二次元\UnityGenshinToonShader-main\Shaders\ToonInput.hlsl" />
+    <None Include="Assets\CombatEditor\Materials\Shaders\ChargePath.shader" />
     <None Include="Assets\CombatEditor\Scripts\AbilityPreview\AbilityEventPreview_Template.txt" />
     <None Include="Assets\CombatEditor\Materials\Shaders\TestSurfaceShader.shader" />
     <None Include="Assets\CombatEditor\Models\Swords\Shader\ToonSwords.shader" />
