@@ -222,7 +222,7 @@ Transform:
   m_GameObject: {fileID: 114032748}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.08, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -240,6 +240,7 @@ GameObject:
   - component: {fileID: 1030787396}
   - component: {fileID: 1030787395}
   - component: {fileID: 1030787398}
+  - component: {fileID: 1030787400}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -288,7 +289,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 40
+  field of view: 60.000004
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -314,13 +315,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1030787394}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.1794746, y: -0, z: -0, w: 0.9837626}
-  m_LocalPosition: {x: 0.02, y: 3.36, z: -11.77}
+  m_LocalRotation: {x: 0.2459351, y: 0, z: 0, w: 0.9692863}
+  m_LocalPosition: {x: 0.007162094, y: 1.92, z: -10.135329}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 20.678, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1030787398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -365,6 +366,31 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &1030787400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1030787394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4fd874cbf194aa43bd3e4c3e888c62f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 8018684772003535835}
+  focusOffset: {x: 0, y: 1.35, z: 0}
+  distance: 4.5
+  minDistance: 2
+  maxDistance: 8
+  rotateOnlyWhenRightMouse: 1
+  yawSpeed: 180
+  pitchSpeed: 120
+  invertY: 0
+  minPitch: -15
+  maxPitch: 65
+  smoothFollow: 0
+  positionSmoothTime: 0.1
 --- !u!1 &1959405641
 GameObject:
   m_ObjectHideFlags: 0
@@ -5104,16 +5130,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 8018684772003535836}
   mover: {fileID: 8018684772003535841}
-  rootMotionWeight: 1
-  useRootRotation: 1
+  rootMotionWeight: 2.3
+  useRootRotation: 0
   rotationWeight: 1
-  gravity: -20
-  groundedStick: -2
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  groundCheckDistance: 0.1
-  groundCheckRadius: 0.2
 --- !u!136 &8018684772003535838
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -5134,9 +5153,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.3
-  m_Height: 1.51
+  m_Height: 1.58
   m_Direction: 1
-  m_Center: {x: 0, y: 0.76, z: 0}
+  m_Center: {x: 0, y: 0.77, z: 0}
 --- !u!54 &8018684772003535839
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5161,7 +5180,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &8018684772003535840
@@ -5176,7 +5195,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44b7e364cc431924f8c2b9a92ce206b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootMotion: {fileID: 8018684772003535837}
   moveExecutor: {fileID: 8018684772003535842}
   bufferTime: 0.2
   attackKey: 323
@@ -5195,13 +5213,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 8018684772003535836}
-  paramMoveX: MoveX
-  paramMoveZ: MoveZ
-  paramSpeed: Speed
-  paramDamp: 0.08
-  maxSpeed: 1
+  idleStateName: Idle
+  walkStartStateName: Avatar_Female_Size02_Anbi_Ani_Walk_Start
+  runStartStateName: Avatar_Female_Size02_Anbi_Ani_Run_Start
+  walkStateName: Avatar_Female_Size02_Anbi_Ani_Walk
+  runStateName: Avatar_Female_Size02_Anbi_Ani_Run
+  turnBackStateName: Avatar_Female_Size02_Anbi_Ani_TurnBack
+  endStateName: Avatar_Female_Size02_Anbi_Ani_Run_End
+  locomotionCrossFade: 0.15
+  actionCrossFade: 0.12
   rotationSpeed: 12
   faceMoveDirection: 1
+  turnBackAngleThreshold: 180
+  turnBackAllowMovement: 0
+  logLocomotionTransitions: 0
 --- !u!114 &8018684772003535842
 MonoBehaviour:
   m_ObjectHideFlags: 0

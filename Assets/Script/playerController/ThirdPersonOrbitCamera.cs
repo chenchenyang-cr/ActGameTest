@@ -27,10 +27,19 @@ public class ThirdPersonOrbitCamera : MonoBehaviour
     public bool smoothFollow = true;
     [Min(0f)] public float positionSmoothTime = 0.06f;
 
+    [Header("Idle Auto Rotation")]
+    public bool enableIdleAutoRotation = true;
+    [Min(0f)] public float idleRotateDelay = 3f;
+    [Min(0f)] public float idleRotateYawSpeed = 120f;
+    [Min(0f)] public float idleRotatePitchSpeed = 90f;
+    [Tooltip("Camera will rotate to this local euler (X=pitch, Y=yaw) after idle delay.")]
+    public Vector3 idleTargetRotation = new Vector3(15f, 0f, 0f);
+
     private float _yaw;
     private float _pitch;
     private Vector3 _focusPoint;
     private Vector3 _focusVelocity;
+    private float _lastCameraInputTime;
 
     void Awake()
     {
@@ -38,6 +47,7 @@ public class ThirdPersonOrbitCamera : MonoBehaviour
         _yaw = euler.y;
         _pitch = NormalizeAngle(euler.x);
         _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
+        _lastCameraInputTime = Time.time;
 
         if (target != null)
             _focusPoint = target.position + focusOffset;
@@ -60,16 +70,38 @@ public class ThirdPersonOrbitCamera : MonoBehaviour
     private void UpdateRotationInput()
     {
         bool canRotate = !rotateOnlyWhenRightMouse || Input.GetMouseButton(1);
-        if (!canRotate) return;
 
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = Input.GetAxis("Mouse Y");
+        float mouseX = 0f;
+        float mouseY = 0f;
+        bool hasManualRotationInput = false;
 
-        _yaw += mouseX * yawSpeed * Time.deltaTime;
+        if (canRotate)
+        {
+            mouseX = Input.GetAxis("Mouse X");
+            mouseY = Input.GetAxis("Mouse Y");
+            hasManualRotationInput = Mathf.Abs(mouseX) > 0.001f || Mathf.Abs(mouseY) > 0.001f;
+        }
 
-        float ySign = invertY ? 1f : -1f;
-        _pitch += mouseY * pitchSpeed * Time.deltaTime * ySign;
-        _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
+        if (hasManualRotationInput)
+        {
+            _lastCameraInputTime = Time.time;
+
+            _yaw += mouseX * yawSpeed * Time.deltaTime;
+
+            float ySign = invertY ? 1f : -1f;
+            _pitch += mouseY * pitchSpeed * Time.deltaTime * ySign;
+            _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
+            return;
+        }
+
+        if (!enableIdleAutoRotation) return;
+        if (Time.time - _lastCameraInputTime < idleRotateDelay) return;
+
+        float targetYaw = idleTargetRotation.y;
+        float targetPitch = Mathf.Clamp(NormalizeAngle(idleTargetRotation.x), minPitch, maxPitch);
+
+        _yaw = Mathf.MoveTowardsAngle(_yaw, targetYaw, idleRotateYawSpeed * Time.deltaTime);
+        _pitch = Mathf.MoveTowards(_pitch, targetPitch, idleRotatePitchSpeed * Time.deltaTime);
     }
 
     private void UpdateCameraTransform()
