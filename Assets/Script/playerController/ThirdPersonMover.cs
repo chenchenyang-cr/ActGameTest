@@ -14,6 +14,7 @@ public class ThirdPersonMover : MonoBehaviour
 
     [Header("Animator")]
     public Animator animator;
+    public MoveExecutor combatExecutor;
 
     [Header("Animation State Names")]
     public string idleStateName = "Idle";
@@ -34,6 +35,10 @@ public class ThirdPersonMover : MonoBehaviour
     [Tooltip("If true, face move direction.")]
     public bool faceMoveDirection = true;
 
+    [Header("Combat Lock")]
+    [Tooltip("If true, block locomotion state updates while combat move is running.")]
+    public bool blockDuringCombatMove = true;
+
     public bool logLocomotionTransitions = false;
 
     public Vector3 MoveDirection { get; private set; }
@@ -41,16 +46,60 @@ public class ThirdPersonMover : MonoBehaviour
 
     private bool _hasMoveInput;
     private bool _runHeld;
+    private bool _wasBlockedByCombat;
 
     void Awake()
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (combatExecutor == null) combatExecutor = GetComponent<MoveExecutor>();
     }
 
     void Update()
     {
+        if (ShouldBlockLocomotionForCombat())
+        {
+            SuppressLocomotionForCombat();
+            return;
+        }
+
+        if (_wasBlockedByCombat)
+        {
+            ReadInputAndBuildMoveDirection();
+            ForceResyncLocomotionAfterCombat();
+            _wasBlockedByCombat = false;
+            return;
+        }
+
         ReadInputAndBuildMoveDirection();
         UpdateLocomotionStateMachine();
+    }
+
+    private bool ShouldBlockLocomotionForCombat()
+    {
+        if (!blockDuringCombatMove) return false;
+        if (combatExecutor == null) return false;
+        return combatExecutor.State == MoveState.Running;
+    }
+
+    private void SuppressLocomotionForCombat()
+    {
+        MoveDirection = Vector3.zero;
+        _hasMoveInput = false;
+        _runHeld = false;
+        _wasBlockedByCombat = true;
+    }
+
+    private void ForceResyncLocomotionAfterCombat()
+    {
+        if (animator == null) return;
+
+        if (!_hasMoveInput)
+        {
+            ForceEnterState(LocomotionState.Idle);
+            return;
+        }
+
+        ForceEnterState(_runHeld ? LocomotionState.RunStart : LocomotionState.WalkStart);
     }
 
     private void ReadInputAndBuildMoveDirection()
@@ -141,6 +190,17 @@ public class ThirdPersonMover : MonoBehaviour
     private void EnterState(LocomotionState nextState)
     {
         if (CurrentLocomotionState == nextState) return;
+        EnterStateInternal(nextState);
+    }
+
+    private void ForceEnterState(LocomotionState nextState)
+    {
+        EnterStateInternal(nextState);
+    }
+
+    private void EnterStateInternal(LocomotionState nextState)
+    {
+        if (animator == null) return;
 
         CurrentLocomotionState = nextState;
 

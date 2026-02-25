@@ -18,135 +18,98 @@ public class MoveExecutor : MonoBehaviour
 
     public MoveState State { get; private set; } = MoveState.Idle;
     public MoveData CurrentMove { get; private set; }
-    public PhaseType CurrentPhaseType => _currentPhase.type;
-    public float PhaseTime => _phaseTime;
 
-    // Events (optional for later integration)
     public event Action<MoveData> OnMoveEnter;
     public event Action<MoveData> OnMoveExit;
-    public event Action<MoveData, PhaseType> OnPhaseEnter;
 
-    private int _phaseIndex;
-    private float _phaseTime;
-    private PhaseData _currentPhase;
-
-    // buffered "want to chain" flag (set when Attack pressed during ChainWindow)
     private bool _chainRequested;
+    private bool _restartComboRequested;
+    private bool _comboWindowOpen;
 
     void Awake()
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
     }
 
-    void Update()
-    {
-        Tick(Time.deltaTime);
-    }
-
-    /// <summary>
-    /// External systems call this when they parsed an Attack command.
-    /// (In later steps you'll pass in Command and handle dodge/jump cancel etc.)
-    /// </summary>
     public void NotifyAttackPressed()
     {
-        // If idle -> start A1 immediately.
         if (State == MoveState.Idle)
         {
             TryStartMove(moveSet != null ? moveSet.A1 : null);
             return;
         }
 
-        // If running -> if we're in chain window, mark request; otherwise ignore (buffer already handled earlier).
-        if (IsInWindow(WindowType.Chain))
+        if (CurrentMove == null)
+            return;
+
+        if (IsCurrentLightAttack() && _comboWindowOpen)
         {
             _chainRequested = true;
+            return;
         }
+
+        if (IsCurrentLightEnd())
+        {
+            _restartComboRequested = true;
+        }
+    }
+
+    public bool CanAcceptAttackCommandNow()
+    {
+        if (State == MoveState.Idle) return true;
+        if (CurrentMove == null) return false;
+        if (IsCurrentLightEnd()) return true;
+        if (IsCurrentLightAttack()) return _comboWindowOpen;
+        return false;
     }
 
     public bool TryStartMove(MoveData move)
     {
-        if (move == null) return false;
+        if (move == null)
+        {
+            Debug.LogWarning("[MoveExecutor] TryStartMove: move is null.");
+            return false;
+        }
 
-        // For now: don't allow starting a new move while running (except chaining at phase transitions)
         if (State != MoveState.Idle) return false;
 
         EnterMove(move);
         return true;
     }
 
-    public void Tick(float dt)
-    {
-        if (State == MoveState.Idle || CurrentMove == null)
-            return;
-
-        _phaseTime += dt;
-
-        // Phase end?
-        if (_phaseTime >= _currentPhase.duration)
-        {
-            // At boundary: if chain requested and next exists -> chain now
-            if (_chainRequested)
-            {
-                var next = moveSet != null ? moveSet.GetNextLight(CurrentMove) : null;
-                if (next != null)
-                {
-                    if (logTransitions) Debug.Log($"[MoveExecutor] Chain: {CurrentMove.moveId} -> {next.moveId}");
-                    _chainRequested = false;
-                    EnterMove(next); // chaining = enter new move immediately
-                    return;
-                }
-
-                // No next -> consume request but keep flowing
-                _chainRequested = false;
-            }
-
-            // advance to next phase
-            _phaseIndex++;
-            if (_phaseIndex >= CurrentMove.PhaseCount)
-            {
-                ExitMove();
-                return;
-            }
-
-            EnterPhase(_phaseIndex);
-        }
-    }
-
-    // -------------------------
-    // Window helpers
-    // -------------------------
-    public bool IsInWindow(WindowType type)
-    {
-        if (State != MoveState.Running) return false;
-        return _currentPhase.HasWindow(type, _phaseTime);
-    }
-
-    // -------------------------
-    // Internals
-    // -------------------------
     private void EnterMove(MoveData move)
     {
-        // Exit previous (if chaining directly, exit old first)
         if (CurrentMove != null)
-        {
             OnMoveExit?.Invoke(CurrentMove);
-        }
 
         State = MoveState.Running;
         CurrentMove = move;
 
         _chainRequested = false;
-        _phaseIndex = 0;
+        _restartComboRequested = false;
+        _comboWindowOpen = false;
 
-        // play animation (optional)
         PlayMoveAnimation(move);
-
         OnMoveEnter?.Invoke(move);
-
-        EnterPhase(_phaseIndex);
 
         if (logTransitions)
             Debug.Log($"[MoveExecutor] EnterMove: {move.moveId}");
+    }
+
+    private void ExitMove()
+    {
+        if (CurrentMove != null && logTransitions)
+            Debug.Log($"[MoveExecutor] ExitMove: {CurrentMove.moveId}");
+
+        if (CurrentMove != null)
+            OnMoveExit?.Invoke(CurrentMove);
+
+        CurrentMove = null;
+        State = MoveState.Idle;
+
+        _chainRequested = false;
+        _restartComboRequested = false;
+        _comboWindowOpen = false;
     }
 
     private void PlayMoveAnimation(MoveData move)
@@ -165,31 +128,95 @@ public class MoveExecutor : MonoBehaviour
         }
     }
 
-    private void EnterPhase(int index)
+    private bool IsCurrentLightAttack()
     {
-        _phaseIndex = index;
-        _currentPhase = CurrentMove.GetPhase(index);
-        _phaseTime = 0f;
-
-        OnPhaseEnter?.Invoke(CurrentMove, _currentPhase.type);
-
-        if (logTransitions)
-            Debug.Log($"[MoveExecutor] Phase: {CurrentMove.moveId} -> {_currentPhase.type}");
+        return moveSet != null && moveSet.IsLightAttack(CurrentMove);
     }
 
-    private void ExitMove()
+    private bool IsCurrentLightEnd()
     {
-        if (logTransitions)
-            Debug.Log($"[MoveExecutor] ExitMove: {CurrentMove.moveId}");
+        return moveSet != null && moveSet.IsLightEnd(CurrentMove);
+    }
 
-        OnMoveExit?.Invoke(CurrentMove);
+    // Animation Events (hook these in clips / Animation Window)
+    public void AE_ComboWindowOpen()
+    {
+        if (!IsCurrentLightAttack()) return;
+        _comboWindowOpen = true;
+    }
 
-        CurrentMove = null;
-        State = MoveState.Idle;
+    public void AE_ComboWindowClose()
+    {
+        _comboWindowOpen = false;
+    }
 
-        _phaseIndex = 0;
-        _phaseTime = 0f;
-        _currentPhase = default;
+    public void AE_AttackMoveEnd()
+    {
+        if (!IsCurrentLightAttack()) return;
+
+        if (TryHandleChainFromAttackEndEvent())
+            return;
+
+        if (TryEnterCurrentLightEnd())
+            return;
+
+        ExitMove();
+    }
+
+    public void AE_EndMoveEnd()
+    {
+        if (!IsCurrentLightEnd()) return;
+
+        if (TryRestartComboFromEnd())
+            return;
+
+        ExitMove();
+    }
+
+    private bool TryHandleChainFromAttackEndEvent()
+    {
+        if (!_chainRequested) return false;
+
+        var next = moveSet != null ? moveSet.GetNextLight(CurrentMove) : null;
         _chainRequested = false;
+        if (next == null) return false;
+
+        if (logTransitions)
+            Debug.Log($"[MoveExecutor] Chain(Event): {CurrentMove.moveId} -> {next.moveId}");
+
+        EnterMove(next);
+        return true;
+    }
+
+    private bool TryEnterCurrentLightEnd()
+    {
+        if (!IsCurrentLightAttack()) return false;
+
+        var endMove = moveSet != null ? moveSet.GetLightEnd(CurrentMove) : null;
+        if (endMove == null)
+            return false;
+
+        if (logTransitions)
+            Debug.Log($"[MoveExecutor] End(Event): {CurrentMove.moveId} -> {endMove.moveId}");
+
+        EnterMove(endMove);
+        return true;
+    }
+
+    private bool TryRestartComboFromEnd()
+    {
+        if (!IsCurrentLightEnd() || !_restartComboRequested)
+            return false;
+
+        var restart = moveSet != null ? moveSet.A1 : null;
+        _restartComboRequested = false;
+        if (restart == null)
+            return false;
+
+        if (logTransitions)
+            Debug.Log($"[MoveExecutor] RestartCombo(Event): {CurrentMove.moveId} -> {restart.moveId}");
+
+        EnterMove(restart);
+        return true;
     }
 }
