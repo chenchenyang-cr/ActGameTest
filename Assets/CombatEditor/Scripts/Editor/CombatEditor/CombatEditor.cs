@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -37,6 +36,9 @@ namespace CombatEditor
 	    public static string SandBoxPath = "Assets/ScriptableObjects/Abilities/Sandbox/";
 	    public static string TemplatesPath = "Assets/ScriptableObjects/Abilities/Templates/";
 	
+	    // 编辑器操作标志，用于标识是否是由编辑器操作（如保存、编译）触发的预览重置
+	    public bool IsEditorOperation = false;
+	
 	    public static float Height_Top = 40;
 	    public static float LineHeight = 25;
 	
@@ -55,6 +57,15 @@ namespace CombatEditor
 	    int CurrentDraggedFrame;
 	    Object TrackObj;
 	    public List<Track> tracks = new List<Track>();
+	
+	    // 框选相关变量
+	    private bool isBoxSelecting = false;
+	    private Vector2 boxSelectStartPos;
+	    private Vector2 boxSelectCurrentPos;
+	    private List<int> selectedTrackIndices = new List<int>();
+	    private bool isDraggingMultipleTracks = false;
+	    private Vector2 multiTrackDragStartPos;
+	    private float multiTrackDragOffset = 0;
 	
 	    public float Width_Inspector = 350;
 	    TimeLineHelper TopFrameThumbHelper;
@@ -163,10 +174,16 @@ namespace CombatEditor
 	        }
 	        InitGUIStyle();
 	
+	        // Handle keyboard shortcut events
+	        HandleKeyboardShortcuts();
+	        
+	        // 验证轨道选择状态，防止条件编辑后轨道跳转
+	        ValidateTrackSelection();
+
 	        PaintL1();
 	        PaintL2();
 	        PaintL3();
-	
+
 	        PaintSplitLine();
 	        PaintRenameField();
 
@@ -224,6 +241,89 @@ namespace CombatEditor
 	    Vector2 AbilityScroll;
 	    float Width_Scroll = 12;
 	    
+	    /// <summary>
+	    /// Handle keyboard shortcuts for operations like undo/redo
+	    /// </summary>
+	    private void HandleKeyboardShortcuts()
+	    {
+	        Event e = Event.current;
+	        
+	        // 处理Ctrl+滚轮缩放时间轴
+	        if (e.type == EventType.ScrollWheel && (e.control || e.command))
+	        {
+	            // 获取滚轮的垂直滚动值（向上滚动为负值，向下滚动为正值）
+	            float scrollDelta = e.delta.y;
+	            
+	            // 计算缩放因子 - 将滚动值转换为缩放增量
+	            float zoomDelta = scrollDelta * 0.03f; // 调整这个值来控制缩放速度
+	            
+	            // 保存鼠标当前位置相对于可视区域的时间点
+	            Rect viewportRect = new Rect(L3TrackAvailableRect.x, L3TrackAvailableRect.y, 
+	                                         position.width - Width_Inspector - L3TrackAvailableRect.x, 
+	                                         position.height - L3TrackAvailableRect.y);
+	            
+	            // 检查鼠标是否在轨道查看区域内
+	            if (viewportRect.Contains(e.mousePosition))
+	            {
+	                // 记录当前TimeLineScaler值
+	                float oldScaler = TimeLineScaler;
+	                
+	                // 计算鼠标位置在轨道上的相对时间点
+	                float mouseTimePosition = (e.mousePosition.x - L3TrackAvailableRect.x) / L3TrackAvailableRect.width;
+	                
+	                // 计算当前视口位置（水平滚动条位置）
+	                float viewportPos = Scroll_Track.x / MaxWidth;
+	                
+	                // 应用缩放
+	                TimeLineScaler = Mathf.Clamp(TimeLineScaler - zoomDelta, 0.4f, 1f);
+	                
+	                // 重新计算时间轴布局
+	                InitRect();
+	                
+	                // 计算缩放前后的比例
+	                float scaleFactor = oldScaler / TimeLineScaler;
+	                
+	                // 调整滚动位置以保持鼠标指针下的时间点位置不变
+	                float newScrollX = (viewportPos + mouseTimePosition) * scaleFactor - mouseTimePosition;
+	                newScrollX = Mathf.Clamp01(newScrollX) * MaxWidth;
+	                
+	                // 应用新的滚动位置
+	                Scroll_Track = new Vector2(newScrollX, Scroll_Track.y);
+	            }
+	            else
+	            {
+	                // 如果鼠标不在轨道区域，直接应用缩放
+	                TimeLineScaler = Mathf.Clamp(TimeLineScaler - zoomDelta, 0.4f, 1f);
+	                InitRect();
+	            }
+	            
+	            // 强制重绘窗口
+	            Repaint();
+	            
+	            // 标记事件已处理
+	            e.Use();
+	        }
+	        
+	        if (e.type == EventType.KeyDown)
+	        {
+	            // Handle Ctrl+Z for Undo
+	            if (e.keyCode == KeyCode.Z && e.control)
+	            {
+	                Undo.PerformUndo();
+	                OnAnimEventChanges(); // Refresh views after undo
+	                e.Use();
+	            }
+	            
+	            // Handle Ctrl+Y (Windows) or Ctrl+Shift+Z (Mac) for Redo
+	            if ((e.keyCode == KeyCode.Y && e.control) || 
+	                (e.keyCode == KeyCode.Z && e.control && e.shift))
+	            {
+	                Undo.PerformRedo();
+	                OnAnimEventChanges(); // Refresh views after redo
+	                e.Use();
+	            }
+	        }
+	    }
 	}
 	
 }

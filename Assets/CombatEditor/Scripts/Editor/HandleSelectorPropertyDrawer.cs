@@ -17,7 +17,7 @@ using UnityEngine;
 	    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 	    {
 	        EditorGUI.BeginProperty(position, label, property);
-	        GUILayout.BeginVertical("TransformData", "window",GUILayout.Height(120));
+	        GUILayout.BeginVertical("TransformData", "window",GUILayout.Height(140));
 	        float TargetlabelWidth = 100;
 	        float TabHeight = 20;
 	        float TabWidth = 60;
@@ -61,55 +61,65 @@ using UnityEngine;
 	        EditorGUILayout.EndHorizontal();
 	        //EditorGUILayout.EndHorizontal();
 	
-	
-	
-	        var editor = CombatEditorUtility.GetCurrentEditor();
-	        List<string> NodeTypesInController = new List<string>();
-	        var nodes = editor.SelectedController.Nodes;
-	
-	        var DefaultNodeName = System.Enum.GetName(typeof(CharacterNode.NodeType), 0);
-	        NodeTypesInController.Add(DefaultNodeName);
-	        for (int i = 0; i < nodes.Count; i++)
+	        // Custom Target Transform toggle
+	        SerializedProperty useCustomTargetProp = property.FindPropertyRelative("UseCustomTarget");
+	        EditorGUILayout.PropertyField(useCustomTargetProp, new GUIContent("Use Custom Target"));
+	        
+	        if (useCustomTargetProp.boolValue)
 	        {
-	            string EnumName = System.Enum.GetName(typeof(CharacterNode.NodeType), (int)nodes[i].type);
-	            NodeTypesInController.Add(System.Enum.GetName(typeof(CharacterNode.NodeType), (int)nodes[i].type));
+	            EditorGUILayout.PropertyField(property.FindPropertyRelative("CustomTargetTransform"), new GUIContent("Custom Target"));
 	        }
-	
-	        GenericMenu menu = new GenericMenu();
-	        string name = property.FindPropertyRelative("TargetNode").enumNames[property.FindPropertyRelative("TargetNode").enumValueIndex];
-	
-	        EditorGUILayout.BeginHorizontal();
-	        EditorGUILayout.LabelField("TargetNode", GUILayout.Width(TargetlabelWidth - 1));
-	        if (EditorGUILayout.DropdownButton(new GUIContent(name), FocusType.Passive))
+	        else
 	        {
-	            for (int i = 0; i < NodeTypesInController.Count; i++)
+	            var editor = CombatEditorUtility.GetCurrentEditor();
+	            List<string> NodeTypesInController = new List<string>();
+	            var nodes = editor.SelectedController.Nodes;
+	
+	            var DefaultNodeName = System.Enum.GetName(typeof(CharacterNode.NodeType), 0);
+	            NodeTypesInController.Add(DefaultNodeName);
+	            for (int i = 0; i < nodes.Count; i++)
 	            {
-	                Node_Sp node_So = new Node_Sp();
-	                node_So.sp = property;
-	                if (i == 0)
-	                {
-	                    node_So.type = CharacterNode.NodeType.Animator;
-	                    menu.AddItem(new GUIContent(NodeTypesInController[i]), false, SetNode, node_So);
-	                }
-	                else if (nodes[i - 1].type != CharacterNode.NodeType.Animator)
-	                {
-	                    node_So.type = nodes[i - 1].type;
-	                    menu.AddItem(new GUIContent(NodeTypesInController[i]), false, SetNode, node_So);
-	                }
+	                string EnumName = System.Enum.GetName(typeof(CharacterNode.NodeType), (int)nodes[i].type);
+	                NodeTypesInController.Add(System.Enum.GetName(typeof(CharacterNode.NodeType), (int)nodes[i].type));
 	            }
-	            menu.ShowAsContext();
+	
+	            GenericMenu menu = new GenericMenu();
+	            string name = property.FindPropertyRelative("TargetNode").enumNames[property.FindPropertyRelative("TargetNode").enumValueIndex];
+	
+	            EditorGUILayout.BeginHorizontal();
+	            EditorGUILayout.LabelField("TargetNode", GUILayout.Width(TargetlabelWidth - 1));
+	            if (EditorGUILayout.DropdownButton(new GUIContent(name), FocusType.Passive))
+	            {
+	                for (int i = 0; i < NodeTypesInController.Count; i++)
+	                {
+	                    Node_Sp node_So = new Node_Sp();
+	                    node_So.sp = property;
+	                    if (i == 0)
+	                    {
+	                        node_So.type = CharacterNode.NodeType.Animator;
+	                        menu.AddItem(new GUIContent(NodeTypesInController[i]), false, SetNode, node_So);
+	                    }
+	                    else if (nodes[i - 1].type != CharacterNode.NodeType.Animator)
+	                    {
+	                        node_So.type = nodes[i - 1].type;
+	                        menu.AddItem(new GUIContent(NodeTypesInController[i]), false, SetNode, node_So);
+	                    }
+	                }
+	                menu.ShowAsContext();
+	            }
+	
+	
+	            //Texture Config = EditorGUIUtility.IconContent("_Popup@2x").image;
+	            //Config.filterMode = FilterMode.Bilinear;
+	            if(GUILayout.Button("Config", GUILayout.Width(60), GUILayout.Height(18)))
+	            {
+	                //CombatEditorUltilies.GetCurrentEditor().select
+	                CombatInspector.GetInspector().SelectCombatConfig();
+	            }
+	
+	            EditorGUILayout.EndHorizontal();
 	        }
 	
-	
-	        //Texture Config = EditorGUIUtility.IconContent("_Popup@2x").image;
-	        //Config.filterMode = FilterMode.Bilinear;
-	        if(GUILayout.Button("Config", GUILayout.Width(60), GUILayout.Height(18)))
-	        {
-	            //CombatEditorUltilies.GetCurrentEditor().select
-	            CombatInspector.GetInspector().SelectCombatConfig();
-	        }
-	
-	        EditorGUILayout.EndHorizontal();
 	        EditorGUILayout.PropertyField(property.FindPropertyRelative("FollowNode"));
 	        EditorGUILayout.PropertyField(property.FindPropertyRelative("RotateByNode"));
 	

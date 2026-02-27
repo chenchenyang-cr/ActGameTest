@@ -10,10 +10,32 @@ namespace CombatEditor
 
         private void Update()
         {
+            // Ensure we're in a valid state before calling Tick
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                return;
+            }
+            
+            // Ensure LastTickTime is initialized
+            if (LastTickTime <= 0)
+            {
+                LastTickTime = Time.realtimeSinceStartup;
+            }
+            
             if ((Time.realtimeSinceStartup - LastTickTime) >= (1 / 60f))
             {
-                Tick();
+                try
+                {
+                    Tick();
+                }
+                catch (System.Exception ex)
+                {
+                    // Log error and stop playing to prevent repeated exceptions
+                    Debug.LogError("Error in CombatEditor Tick: " + ex.Message);
+                    ResetPlayStates();
+                }
             }
+            
             if (Time.realtimeSinceStartup - StartTime >= 1)
             {
                 StartTime = Mathf.Infinity;
@@ -41,37 +63,47 @@ namespace CombatEditor
 
         public void PaintPlayButtons()
         {
-
-            ToggleButtonStyleNormal = "Button";
-            ToggleButtonStyleToggled = new GUIStyle("Button");
-            ToggleButtonStyleToggled.normal.background = ToggleButtonStyleToggled.onFocused.background;
-
-            float PlayButtonLength = 35;
-            
-            Rect PlayAnimRect = new Rect(L2Rect.x, L2Rect.y, PlayButtonLength, PlayButtonLength);
-            Rect LoopAnimRect = new Rect(L2Rect.x + PlayButtonLength, L2Rect.y, PlayButtonLength, PlayButtonLength);
-            Rect StopAnimRect = new Rect(L2Rect.x + PlayButtonLength * 2, L2Rect.y, PlayButtonLength, PlayButtonLength);
-            //Rect PauseRect = new Rect(L2Rect.x + PlayButtonLength * 3, L2Rect.y, PlayButtonLength, PlayButtonLength);
-            Rect ClearPreviewRect = new Rect(L2Rect.x + PlayButtonLength * 3, L2Rect.y, PlayButtonLength, PlayButtonLength);
-
-            
-            var PlayToggle = GUI.Toggle(PlayAnimRect, IsPlaying, "", "ButtonLeft");
-            if(PlayToggle!= IsPlaying)
+            //Control
+            if (ToggleButtonStyleNormal == null)
             {
-                IsPlaying = PlayToggle;
-                if (IsPlaying)
+                ToggleButtonStyleNormal = new GUIStyle(EditorStyles.toolbarButton);
+                ToggleButtonStyleToggled = new GUIStyle(EditorStyles.toolbarButton);
+                ToggleButtonStyleNormal.fixedHeight = LineHeight;
+                ToggleButtonStyleToggled.fixedHeight = LineHeight;
+                ToggleButtonStyleToggled.normal.background = ToggleButtonStyleToggled.active.background;
+            }
+            float ButtonWidth = 40;
+            float startX = (L2Rect.width - 6 * ButtonWidth) / 2;
+            float ButtonHeight = LineHeight;
+
+            Rect GoToZeroRect = new Rect(startX, 0, ButtonWidth, ButtonHeight);
+            Rect PlayAnimRect = new Rect(startX + ButtonWidth, 0, ButtonWidth, ButtonHeight);
+            Rect LoopAnimRect = new Rect(startX + ButtonWidth * 2, 0, ButtonWidth, ButtonHeight);
+            Rect StopAnimRect = new Rect(startX + ButtonWidth * 3, 0, ButtonWidth, ButtonHeight);
+            Rect ClearPreviewRect = new Rect(startX + ButtonWidth * 4, 0, ButtonWidth, ButtonHeight);
+            
+            // 添加整理轨道按钮 - 紧接着之前的按钮，并向右偏移16像素避免被竖线挡住
+            Rect sortTracksRect = new Rect(startX + ButtonWidth * 5 + 16, 0, ButtonWidth * 1.2f, ButtonHeight);
+            
+            if (GUI.Button(GoToZeroRect, "", "ButtonLeft"))
+            {
+                AnimationBackToStart();
+            }
+            CombatEditorUtility.DrawEditorTextureOnRect(GoToZeroRect, 0.6f, "Animation.FirstKey");
+            if (GUI.Button(PlayAnimRect, "", "ButtonMid"))
+            {
+                if (!IsPlaying)
                 {
                     OnStartPlay();
                 }
                 else
                 {
-                    OnStartPlay();
-                    //OnPausePlay();
+                    OnPausePlay();
                 }
             }
-            if (!IsPlaying)
+            if (IsPlaying)
             {
-                CombatEditorUtility.DrawEditorTextureOnRect(PlayAnimRect, 0.6f, "PlayButton@2x");
+                CombatEditorUtility.DrawEditorTextureOnRect(PlayAnimRect, 0.6f, "d_PauseButton@2x");
             }
             else
             {
@@ -125,14 +157,35 @@ namespace CombatEditor
                 OnEndPreview();
             }
 
+            // 添加整理轨道按钮
+            GUIStyle sortButtonStyle = new GUIStyle("ButtonMid");
+            sortButtonStyle.margin = new RectOffset(0, 1, 0, 0);
+            sortButtonStyle.fontSize = 10;
+            sortButtonStyle.alignment = TextAnchor.MiddleCenter;
+            sortButtonStyle.fontStyle = FontStyle.Bold;
+            Color originalColor = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.4f, 0.8f, 1f, 1f); // 使用浅蓝色背景使按钮更醒目
+            if (GUI.Button(sortTracksRect, "整理轨道", sortButtonStyle))
+            {
+                SortEventsByTimeOrder();
+            }
+            GUI.backgroundColor = originalColor;
+            
             //CombatEditorUtility.DrawEditorTextureOnRect(TimeMulIcon, 1, "d_AnimationClip Icon");
 
             //CombatEditorUtility.DrawEditorTextureOnRect(LoopWaitIcon, 0.6f, "beginButton");
 
         }
 
+        // 添加静态变量来存储轨道UI信息
+        private static Dictionary<int, AbilityEvent> _trackControlIDToEvent = new Dictionary<int, AbilityEvent>();
+        private static Dictionary<int, int> _trackControlIDToIndex = new Dictionary<int, int>();
+        
         public void PaintTrackLabels()
         {
+            // 清除之前的映射
+            _trackControlIDToEvent.Clear();
+            _trackControlIDToIndex.Clear();
 
             #region ConfigAnimRange
             Rect AnimConfigRect = new Rect(L2Rect.x, L3TrackAvailableRect.y, L2Rect.width, LineHeight);
@@ -151,6 +204,18 @@ namespace CombatEditor
                 ChangeInspectedType(InspectedType.PreviewConfig);
             }
             GUI.backgroundColor = DefaultColor;
+            
+            // 添加整理轨道按钮
+            Rect sortButtonRect = new Rect(AnimConfigRect.x + AnimConfigRect.width + 5, AnimConfigRect.y, 100, AnimConfigRect.height);
+            Color originalBgColor = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.4f, 0.8f, 1f, 1f); // 使用浅蓝色背景
+            GUIStyle sortBtnStyle = new GUIStyle(style);
+            sortBtnStyle.fontStyle = FontStyle.Bold;
+            if (GUI.Button(sortButtonRect, "按时间排序", sortBtnStyle))
+            {
+                SortEventsByTimeOrder();
+            }
+            GUI.backgroundColor = originalBgColor;
             #endregion
             List<AbilityEvent> eves = SelectedAbilityObj.events;
 
@@ -183,6 +248,11 @@ namespace CombatEditor
                 }
 
                 int controlID = GUIUtility.GetControlID(FocusType.Passive);
+                
+                // 🎯 存储控件ID和对应的事件映射
+                _trackControlIDToEvent[controlID] = eves[i];
+                _trackControlIDToIndex[controlID] = i;
+                
                 if (GUIUtility.hotControl == controlID && !LabelRect.Contains(e.mousePosition))
                 {
                     DragHandleRequired = true;
@@ -241,12 +311,18 @@ namespace CombatEditor
                 {
                     CombatEditorUtility.DrawEditorTextureOnRect(ToggleRect, 0.7f, "scenevis_hidden@2x");
                 }
+                
+                // 🎯 为标签按钮创建特殊的控件ID，用于右键检测
+                int labelControlID = GUIUtility.GetControlID(FocusType.Passive);
+                _trackControlIDToEvent[labelControlID] = eves[i];
+                _trackControlIDToIndex[labelControlID] = i;
+                
                 //Label
-
                 if (GUI.Button(LabelRect, eves[i].Obj.name, style))
                 {
                     //OnClickFields(i, eves[i]);
                 }
+                
                 #region TogglePreviewButton
                 GUI.backgroundColor = DefaultColor;
                 if (eves[i].Previewable)
@@ -322,5 +398,26 @@ namespace CombatEditor
             LastIndex = L2DragEndIndex;
         }
 
+        // 🎯 添加静态方法来获取鼠标悬停的轨道事件
+        public static AbilityEvent GetMouseOverTrackEvent()
+        {
+            int hotControl = GUIUtility.hotControl;
+            if (hotControl != 0 && _trackControlIDToEvent.ContainsKey(hotControl))
+            {
+                return _trackControlIDToEvent[hotControl];
+            }
+            return null;
+        }
+        
+        // 🎯 添加静态方法来获取鼠标悬停的轨道索引
+        public static int GetMouseOverTrackIndex()
+        {
+            int hotControl = GUIUtility.hotControl;
+            if (hotControl != 0 && _trackControlIDToIndex.ContainsKey(hotControl))
+            {
+                return _trackControlIDToIndex[hotControl];
+            }
+            return -1;
+        }
     }
 }

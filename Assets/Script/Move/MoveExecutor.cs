@@ -25,10 +25,24 @@ public class MoveExecutor : MonoBehaviour
     private bool _chainRequested;
     private bool _restartComboRequested;
     private bool _comboWindowOpen;
+    private int _comboWindowHeartbeatFrame = -1;
+    private bool _endInterruptWindowOpen;
+    private int _endInterruptWindowHeartbeatFrame = -1;
 
     void Awake()
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
+    }
+
+    void LateUpdate()
+    {
+        // Combo window stays valid only while AE_ComboWindowOpen keeps being called.
+        if (_comboWindowOpen && _comboWindowHeartbeatFrame != Time.frameCount)
+            _comboWindowOpen = false;
+
+        // End interrupt window stays valid only while AE_EndInterruptWindowOpen keeps being called.
+        if (_endInterruptWindowOpen && _endInterruptWindowHeartbeatFrame != Time.frameCount)
+            _endInterruptWindowOpen = false;
     }
 
     public void NotifyAttackPressed()
@@ -50,7 +64,8 @@ public class MoveExecutor : MonoBehaviour
 
         if (IsCurrentLightEnd())
         {
-            _restartComboRequested = true;
+            if (!IsEndInterruptWindowOpen()) return;
+            TryInterruptEndByAttackInput();
         }
     }
 
@@ -58,9 +73,20 @@ public class MoveExecutor : MonoBehaviour
     {
         if (State == MoveState.Idle) return true;
         if (CurrentMove == null) return false;
-        if (IsCurrentLightEnd()) return true;
+        if (IsCurrentLightEnd()) return IsEndInterruptWindowOpen();
         if (IsCurrentLightAttack()) return _comboWindowOpen;
         return false;
+    }
+
+    public bool TryInterruptEndByMovement()
+    {
+        if (!IsEndInterruptWindowOpen()) return false;
+
+        if (logTransitions)
+            Debug.Log($"[MoveExecutor] EndInterruptedByMove: {CurrentMove.moveId} -> Idle");
+
+        ExitMove();
+        return true;
     }
 
     public bool TryStartMove(MoveData move)
@@ -88,6 +114,9 @@ public class MoveExecutor : MonoBehaviour
         _chainRequested = false;
         _restartComboRequested = false;
         _comboWindowOpen = false;
+        _comboWindowHeartbeatFrame = -1;
+        _endInterruptWindowOpen = false;
+        _endInterruptWindowHeartbeatFrame = -1;
 
         PlayMoveAnimation(move);
         OnMoveEnter?.Invoke(move);
@@ -110,6 +139,9 @@ public class MoveExecutor : MonoBehaviour
         _chainRequested = false;
         _restartComboRequested = false;
         _comboWindowOpen = false;
+        _comboWindowHeartbeatFrame = -1;
+        _endInterruptWindowOpen = false;
+        _endInterruptWindowHeartbeatFrame = -1;
     }
 
     private void PlayMoveAnimation(MoveData move)
@@ -143,11 +175,28 @@ public class MoveExecutor : MonoBehaviour
     {
         if (!IsCurrentLightAttack()) return;
         _comboWindowOpen = true;
+        _comboWindowHeartbeatFrame = Time.frameCount;
     }
 
     public void AE_ComboWindowClose()
     {
+        // Keep this event for backward compatibility with old clips.
         _comboWindowOpen = false;
+        _comboWindowHeartbeatFrame = -1;
+    }
+
+    public void AE_EndInterruptWindowOpen()
+    {
+        if (!IsCurrentLightEnd()) return;
+        _endInterruptWindowOpen = true;
+        _endInterruptWindowHeartbeatFrame = Time.frameCount;
+    }
+
+    public void AE_EndInterruptWindowClose()
+    {
+        // Keep this event for backward compatibility with old clips.
+        _endInterruptWindowOpen = false;
+        _endInterruptWindowHeartbeatFrame = -1;
     }
 
     public void AE_AttackMoveEnd()
@@ -218,5 +267,25 @@ public class MoveExecutor : MonoBehaviour
 
         EnterMove(restart);
         return true;
+    }
+
+    private bool TryInterruptEndByAttackInput()
+    {
+        if (!IsEndInterruptWindowOpen()) return false;
+
+        var restart = moveSet != null ? moveSet.A1 : null;
+        if (restart == null)
+            return false;
+
+        if (logTransitions)
+            Debug.Log($"[MoveExecutor] EndInterruptedByAttack: {CurrentMove.moveId} -> {restart.moveId}");
+
+        EnterMove(restart);
+        return true;
+    }
+
+    private bool IsEndInterruptWindowOpen()
+    {
+        return IsCurrentLightEnd() && _endInterruptWindowOpen;
     }
 }

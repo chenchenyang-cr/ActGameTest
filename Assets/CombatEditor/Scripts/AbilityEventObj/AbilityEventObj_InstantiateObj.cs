@@ -6,6 +6,9 @@ namespace CombatEditor
     public class AbilityEventObj_CreateObjWithHandle : AbilityEventObj
     {
         public InsedObject ObjData = new InsedObject();
+        public bool DestroyOnEnd = false;
+        public float DestroyDelay = 0f;
+        
         public override EventTimeType GetEventTimeType()
         {
             return EventTimeType.EventTime;
@@ -39,6 +42,18 @@ namespace CombatEditor
         public override void EndEffect()
         {
             base.EndEffect();
+            
+            if (EventObj.DestroyOnEnd && InstantiatedObj != null)
+            {
+                if (EventObj.DestroyDelay <= 0)
+                {
+                    Object.Destroy(InstantiatedObj);
+                }
+                else
+                {
+                    Object.Destroy(InstantiatedObj, EventObj.DestroyDelay);
+                }
+            }
         }
     }
     public partial class AbilityEventEffect_CreateObjWithHandle : AbilityEventEffect

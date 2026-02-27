@@ -22,23 +22,48 @@ using UnityEngine;
 	        SpeedObj.transform.SetParent(previewGroup.transform);
 	        _speed = SpeedObj.AddComponent<PreviewObject_AnimSpeed>();
 	        _speed._preview = this;
-	        _speed.CurrentAnimSpeedModifier = Obj.Speed;
-	        _speed.transform.SetParent(previewGroup.transform);
 	        
+	        // Set initial speed based on whether curve lerp is enabled
+	        if (Obj.UseCurveLerp)
+	        {
+	            _speed.CurrentAnimSpeedModifier = Obj.SpeedCurve.StartValue;
+	        }
+	        else
+	        {
+	            _speed.CurrentAnimSpeedModifier = Obj.Speed;
+	        }
+	        
+	        _speed.transform.SetParent(previewGroup.transform);
 	    }
+	    
 	    public override void PreviewRunning(float CurrentTimePercentage)
 	    {
 	        base.PreviewRunning(CurrentTimePercentage);
 	
 	        if (PreviewInRange(CurrentTimePercentage))
 	        {
-	            _speed.CurrentAnimSpeedModifier = Obj.Speed;
+	            float currentSpeed;
+	            
+	            if (Obj.UseCurveLerp)
+	            {
+	                // Use curve to interpolate speed
+	                currentSpeed = Obj.SpeedCurve.GetCurveValue(
+	                    StartTimePercentage, 
+	                    EndTimePercentage, 
+	                    CurrentTimePercentage);
+	            }
+	            else
+	            {
+	                // Use constant speed
+	                currentSpeed = Obj.Speed;
+	            }
+	            
+	            _speed.CurrentAnimSpeedModifier = currentSpeed;
 	        }
 	        else
 	        {
 	            _speed.CurrentAnimSpeedModifier = 1;
 	        }
-	
 	    }
 #endif
 	}

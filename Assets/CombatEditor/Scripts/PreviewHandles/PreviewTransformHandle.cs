@@ -38,60 +38,49 @@ using UnityEngine;
 	    }
 	    public override void PaintHandle()
 	    {
-	        if (Selection.activeObject == gameObject)
-	        {
-	            Tools.hidden = true;
-	        }
-	        else
-	        {
-	            Tools.hidden = false;
-	        }
-	        Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+	        if (TargetTrans == null) return;
+	        ControlType = InsObjData.controlType;
+	        UpdateTransformData();
+	        var position = TargetTrans.position;
+	        var rotation = TargetTrans.rotation;
+	        var scale = TargetTrans.localScale;
 	
-	        Vector3 controllerPos = Vector3.zero;    //Handles.SphereHandleCap(0, controllerPos, Quaternion.identity, 0.3f, EventType.Repaint);
-	        //Handles.CircleHandleCap(0, controllerPos, Quaternion.Euler(90, 0, 0), 1f, EventType.Repaint);
-	        Handles.Label(TargetTrans.position, TargetTrans.name);
-	
-	        if (Tools.current == Tool.Move)
+	        if (ControlType == ControlTypeEnum.Translation)
 	        {
 	            EditorGUI.BeginChangeCheck();
-	            var PosAfterMove = Handles.PositionHandle(TargetTrans.position, TargetTrans.rotation);
+	            var newPosition = Handles.PositionHandle(position, rotation);
 	            if (EditorGUI.EndChangeCheck())
 	            {
-	                TargetTrans.position = PosAfterMove;
+	                Undo.RecordObject(TargetTrans, "Move Preview Object");
+	                TargetTrans.position = newPosition;
+	                SetTransformDataToEventObj(TargetTrans);
+	            }
+	
+	        }
+	        if (ControlType == ControlTypeEnum.Rotation)
+	        {
+	            EditorGUI.BeginChangeCheck();
+	            Handles.color = Color.green;
+	            var newRotation = Handles.RotationHandle(rotation, position);
+	            if (EditorGUI.EndChangeCheck())
+	            {
+	                Undo.RecordObject(TargetTrans, "Rotate Preview Object");
+	                TargetTrans.rotation = newRotation;
 	
 	                SetTransformDataToEventObj(TargetTrans);
 	            }
 	        }
-	
-	        Handles.color = Color.green;
-	        Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
-	        if (Tools.current == Tool.Rotate)
+	        if (ControlType == ControlTypeEnum.Scale)
 	        {
 	            EditorGUI.BeginChangeCheck();
-	            Quaternion rot = Handles.RotationHandle(TargetTrans.rotation, TargetTrans.position);
+	            var newScale = Handles.ScaleHandle(scale, position, rotation, 1);
 	            if (EditorGUI.EndChangeCheck())
 	            {
-	                TargetTrans.rotation = rot;
-	                Undo.RecordObject(TargetTrans, "Rotated RotateAt Point");
-	
+	                Undo.RecordObject(TargetTrans, "Scale Preview Object");
+	                TargetTrans.localScale = newScale;
 	                SetTransformDataToEventObj(TargetTrans);
-	                //ModifyTrans.Invoke(TargetTrans);
 	            }
 	        }
-	        if (Tools.current == Tool.Scale)
-	        {
-	            //EditorGUI.BeginChangeCheck();
-	            //Vector3 localScale = Handles.ScaleHandle(TargetTrans.localScale, TargetTrans.position, TargetTrans.rotation);
-	            //if (EditorGUI.EndChangeCheck())
-	            //{
-	            //    TargetTrans.localScale = localScale;
-	            //    Undo.RecordObject(TargetTrans, "Rotated RotateAt Point");
-	
-	            //    SetTransformDataToEventObj(TargetTrans);
-	            //}
-	        }
-	
 	    }
 	    public override void UpdateTransformData()
 	    {
@@ -101,11 +90,11 @@ using UnityEngine;
 	
 	    public void UpdateSelfTransByData()
 	    {
-	
+
 	        Vector3 TargetPos = Vector3.zero;
 	        Quaternion TargetRot = Quaternion.identity;
-	
-	
+
+
 	        //If static, position and rotation is based on StartFrame.
 	        //Is !FollowRot, rot by AnimatorFront, else rot by joint rotation.
 	        if (!InsObjData.FollowNode)
@@ -125,19 +114,39 @@ using UnityEngine;
 	        else
 	        {
 	            //Need To Add RootMotion cause root motion dont move the animator in editor mode
-	            Transform trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            Transform trans = null;
+	            
+	            if (InsObjData.UseCustomTarget && !string.IsNullOrEmpty(InsObjData.CustomTargetName))
+	            {
+	                // Find target by name in the scene
+	                GameObject targetGameObject = GameObject.Find(InsObjData.CustomTargetName);
+	                if (targetGameObject != null)
+	                {
+	                    trans = targetGameObject.transform;
+	                }
+	                else
+	                {
+	                    Debug.LogWarning($"Preview: Custom target '{InsObjData.CustomTargetName}' not found in scene, using default node");
+	                    trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	                }
+	            }
+	            else
+	            {
+	                trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            }
+	            
 	            Vector3 NodePos = trans.position;
 	            TargetPos = NodePos + trans.rotation * InsObjData.Offset;
-	            if (InsObjData.TargetNode == CharacterNode.NodeType.Animator)
+	            if (!InsObjData.UseCustomTarget && InsObjData.TargetNode == CharacterNode.NodeType.Animator)
 	            {
 	                TargetPos += trans.rotation * CombatGlobalEditorValue.CurrentMotionTAtGround;
 	            }
-	
+
 	            if (InsObjData.RotateByNode)
 	            {
 	                TargetRot = trans.rotation * InsObjData.Rot;
 	            }
-	
+
 	            if (!InsObjData.RotateByNode)
 	            {
 	                TargetRot = _combatController.GetNodeTranform(CharacterNode.NodeType.Animator).rotation * InsObjData.Rot;
@@ -164,9 +173,28 @@ using UnityEngine;
 	        }
 	        else
 	        {
-	            Transform trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            Transform trans = null;
+	            
+	            if (InsObjData.UseCustomTarget && !string.IsNullOrEmpty(InsObjData.CustomTargetName))
+	            {
+	                // Find target by name in the scene
+	                GameObject targetGameObject = GameObject.Find(InsObjData.CustomTargetName);
+	                if (targetGameObject != null)
+	                {
+	                    trans = targetGameObject.transform;
+	                }
+	                else
+	                {
+	                    trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	                }
+	            }
+	            else
+	            {
+	                trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            }
+	            
 	            Vector3 OffsetWithRotation = PreviewTransform.position - trans.position;
-	            if (InsObjData.TargetNode == CharacterNode.NodeType.Animator)
+	            if (!InsObjData.UseCustomTarget && InsObjData.TargetNode == CharacterNode.NodeType.Animator)
 	            {
 	                OffsetWithRotation -= trans.rotation * CombatGlobalEditorValue.CurrentMotionTAtGround;
 	            }
@@ -176,11 +204,11 @@ using UnityEngine;
 	    public void SetRot(Transform PreviewTransform)
 	    {
 	        var AnimatorRot = _combatController._animator.transform.rotation;
-	
-	
+
+
 	        if (!InsObjData.FollowNode)
 	        {
-	
+
 	            if (InsObjData.RotateByNode)
 	            {
 	                InsObjData.Rot = Quaternion.Inverse(StartFrameRot) * PreviewTransform.rotation;
@@ -192,7 +220,26 @@ using UnityEngine;
 	        }
 	        else
 	        {
-	            Transform trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            Transform trans = null;
+	            
+	            if (InsObjData.UseCustomTarget && !string.IsNullOrEmpty(InsObjData.CustomTargetName))
+	            {
+	                // Find target by name in the scene
+	                GameObject targetGameObject = GameObject.Find(InsObjData.CustomTargetName);
+	                if (targetGameObject != null)
+	                {
+	                    trans = targetGameObject.transform;
+	                }
+	                else
+	                {
+	                    trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	                }
+	            }
+	            else
+	            {
+	                trans = _combatController.GetNodeTranform(InsObjData.TargetNode);
+	            }
+	            
 	            if (InsObjData.RotateByNode)
 	            {
 	                InsObjData.Rot = Quaternion.Inverse(trans.rotation) * PreviewTransform.rotation;

@@ -83,13 +83,19 @@ namespace CombatEditor
         }
         public void OnDragEventTimePoint()
         {
+            // Register undo before modifying the time points
+            RegisterUndo(SelectedAbilityObj, "Change Event Time");
+            
             UpdateAsset(SelectedAbilityObj);
             Repaint();
             //OnPreviewAnimationAtFrame(CurrentFrame);
         }
         public void OnResetMultiStatesCount(AbilityEventObj Obj)
         {
-            for (int i =0;i< SelectedAbilityObj.events.Count;i++)
+            // Register undo before modifying multi-states
+            RegisterUndo(SelectedAbilityObj, "Reset Multi-State Timing");
+            
+            for (int i = 0; i < SelectedAbilityObj.events.Count; i++)
             {
                 var eve = SelectedAbilityObj.events[i];
                 if(eve.Obj == Obj)

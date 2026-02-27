@@ -78,7 +78,19 @@ public class ThirdPersonMover : MonoBehaviour
     {
         if (!blockDuringCombatMove) return false;
         if (combatExecutor == null) return false;
-        return combatExecutor.State == MoveState.Running;
+        if (combatExecutor.State != MoveState.Running) return false;
+
+        if (HasMoveInputNow() && combatExecutor.TryInterruptEndByMovement())
+            return false;
+
+        return true;
+    }
+
+    private static bool HasMoveInputNow()
+    {
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+        return (h * h + v * v) > 0.0001f;
     }
 
     private void SuppressLocomotionForCombat()

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor.Animations;
 
- namespace CombatEditor
+namespace CombatEditor
 {	
 	public class CombatPreviewController 
 	{
 	    public CombatController _combatController;
-	    CombatEditor editor;
+	    public CombatEditor editor;
 	    public AbilityScriptableObject AbilityObj;
 	
 	    //CurrentRoot Data is needed when animations have rootmotions in preview.
@@ -75,6 +76,17 @@ using UnityEngine.SceneManagement;
 	        ClearAllPreviewHandles();
 	        DestroyPreviewGroupObj();
 	        ResetMotions();
+	        
+	        // 检查是否在编辑器拖动模式或编辑器操作（如保存、编译）
+	        bool isEditorDragMode = editor != null && (!(editor.IsPlaying || editor.IsLooping) || editor.IsEditorOperation);
+	        
+	        // 只有在非编辑器模式下才恢复角色的原始位置和旋转
+	        if (_combatController != null && !isEditorDragMode)
+	        {
+	            _combatController.transform.position = CombatGlobalEditorValue.CharacterTransPosBeforePreview;
+	            _combatController.transform.rotation = CombatGlobalEditorValue.CharacterRotBeforePreview;
+	        }
+	        
 	        if (AnimationMode.InAnimationMode())
 	        {
 	            AnimationMode.StopAnimationMode();
@@ -86,14 +98,25 @@ using UnityEngine.SceneManagement;
 	    {
 	        if (EditorApplication.isPlaying) return;
 	        previewBackToStart();
-	
+	        
+	        // 检查是否在编辑器拖动模式
+	        bool isEditorDragMode = !(editor.IsPlaying || editor.IsLooping);
+	        
+	        // 只有在播放预览的情况下才恢复角色的原始位置和旋转
+	        if (_combatController != null && !isEditorDragMode)
+	        {
+	            _combatController.transform.position = CombatGlobalEditorValue.CharacterTransPosBeforePreview;
+	            _combatController.transform.rotation = CombatGlobalEditorValue.CharacterRotBeforePreview;
+	        }
 	    }
 	
 	
 	    public void RecordPositionBeforeStart()
 	    {
 	        StartControllerPosition = _combatController.transform.position;
-	        CombatGlobalEditorValue.CharacterTransPosBeforePreview = _combatController.transform.position; ;
+	        CombatGlobalEditorValue.CharacterTransPosBeforePreview = _combatController.transform.position;
+	        // Add recording of rotation before preview
+	        CombatGlobalEditorValue.CharacterRotBeforePreview = _combatController.transform.rotation;
 	    }
 	
 	
@@ -137,15 +160,15 @@ using UnityEngine.SceneManagement;
 	    // Because of timescale, the particles need the RealTime to perform.
 	    float RealTime;
 	
-	    //Ԥ������
-	    public void ShowPreviewAtPercentage(float Percentage)
-	    {
-	        FetchAbility();
-	        if (EditorApplication.isPlaying || AbilityObj == null || _combatController._animator == null) return;
-	        if (AbilityObj.Clip == null) return;
-	        PercentageTime = Percentage;
-	        UpdateAnimation(Percentage);
-	    }
+    //预览功能
+    public void ShowPreviewAtPercentage(float Percentage)
+    {
+        FetchAbility();
+        if (EditorApplication.isPlaying || AbilityObj == null || _combatController == null || _combatController._animator == null) return;
+        if (AbilityObj.Clip == null) return;
+        PercentageTime = Percentage;
+        UpdateAnimation(Percentage);
+    }
 	
 	    public void FetchAbility()
 	    {
@@ -163,47 +186,77 @@ using UnityEngine.SceneManagement;
 	    int TotalFrame => (int)(AbilityObj.Clip.length * 60);
 	
 	
-	    /// <summary>
-	    /// ����ˢ�¶���
-	    /// </summary>
-	    public void UpdateAnimation(float percentage)
-	    {
-	        if (!AnimationMode.InAnimationMode())
-	        {
-	            AnimationMode.StartAnimationMode();
-	      
-	        }
-	        if (AnimationMode.InAnimationMode())
-	        {
-	            UpdatePreview(percentage);
+    /// <summary>
+    /// 更新刷新动画
+    /// </summary>
+    public void UpdateAnimation(float percentage)
+    {
+        if (!AnimationMode.InAnimationMode())
+        {
+            AnimationMode.StartAnimationMode();
+        }
+        
+        if (AnimationMode.InAnimationMode())
+        {
+            UpdatePreview(percentage);
+        }
+        
+        // Unity 6 fix: Always repaint scene view after updating animation
+        SceneView.RepaintAll();
+    }
 	
-	        }
-	        SceneView.RepaintAll();
-	    }
 	
-	
-	    public void UpdateAnimationInEditMode(float time)
-	    {
-	        AnimationMode.BeginSampling();
-	        CombatGlobalEditorValue.Percentage = time;
-	        if (_combatController != null)
-	        {
-	            AnimationMode.SampleAnimationClip(_combatController._animator.gameObject, AbilityObj.Clip, time * AbilityObj.Clip.length);
-	            GetCurrentRootMotion(time);
-	
-	            GetCurrentAnimationMotion(time);
-	
-	            CombatGlobalEditorValue.CurrentRootMotionOffset = _combatController._animator.transform.rotation * CombatGlobalEditorValue.CurrentMotionTAtGround;
-	
-	            CurrentCharacterCenter = StartControllerPosition + CombatGlobalEditorValue.CurrentRootMotionOffset + CurrentFrameMotions;
-	
-	            CombatGlobalEditorValue.CharacterRootCenterAtCurrentFrame = CurrentCharacterCenter;
-	        }
-	        else
-	        {
-	        }
-	        AnimationMode.EndSampling();
-	    }
+    public void UpdateAnimationInEditMode(float time)
+    {
+        AnimationMode.BeginSampling();
+        CombatGlobalEditorValue.Percentage = time;
+        if (_combatController != null)
+        {
+            // 保存原始位置和旋转的备份
+            Vector3 originalPosition = CombatGlobalEditorValue.CharacterTransPosBeforePreview;
+            Quaternion originalRotation = CombatGlobalEditorValue.CharacterRotBeforePreview;
+            
+            // Use precise animation clip sampling
+            double animTime = time * AbilityObj.Clip.length;
+            // Sample animation with the precise time calculation
+            AnimationMode.SampleAnimationClip(_combatController._animator.gameObject, AbilityObj.Clip, (float)animTime);
+            
+            GetCurrentRootMotion(time);
+            GetCurrentAnimationMotion(time);
+
+            CombatGlobalEditorValue.CurrentRootMotionOffset = _combatController._animator.transform.rotation * CombatGlobalEditorValue.CurrentMotionTAtGround;
+            
+            // 编辑器模式下的特殊处理
+            bool isEditorMode = !editor.IsPlaying && !editor.IsLooping;
+            
+            if (!isEditorMode)
+            {
+                // 只在播放模式下应用位置和旋转
+                
+                // 计算位置时始终基于原始位置，避免累积误差
+                Vector3 position = originalPosition + CombatGlobalEditorValue.CurrentRootMotionOffset + CurrentFrameMotions;
+                CurrentCharacterCenter = position;
+                
+                // 应用位置和旋转效果
+                _combatController.transform.position = position;
+                
+                // 应用旋转效果时也基于原始旋转，避免累积误差
+                if (CurrentFrameRotation != Quaternion.identity)
+                {
+                    Quaternion finalRotation = originalRotation * CurrentFrameRotation;
+                    _combatController.transform.rotation = finalRotation;
+                }
+            }
+            else
+            {
+                // 在编辑器模式下，仅计算当前中心点但不应用变换
+                CurrentCharacterCenter = _combatController.transform.position;
+            }
+            
+            CombatGlobalEditorValue.CharacterRootCenterAtCurrentFrame = CurrentCharacterCenter;
+        }
+        AnimationMode.EndSampling();
+    }
 	
 	   
 	
@@ -211,25 +264,72 @@ using UnityEngine.SceneManagement;
 	    public Vector3 CurrentCharacterCenter;
 	
 	    Vector3 CurrentFrameMotions;
+	    Quaternion CurrentFrameRotation = Quaternion.identity; // New field for storing rotation effects
+	    
 	    public void GetCurrentAnimationMotion(float timePercentage)
 	    {
 	        CurrentFrameMotions = Vector3.zero;
-	        if(previews!=null)
+	        
+	        // 检查是否在播放模式，如果不是，则保留当前旋转而不是重置
+	        if (!editor.IsPlaying && !editor.IsLooping)
 	        {
+	            // 在编辑器状态下保留当前旋转
+	            // CurrentFrameRotation保持不变
+	        }
+	        else
+	        {
+	            // 只在播放模式下重置旋转
+	            CurrentFrameRotation = Quaternion.identity; // Reset rotation
+	        }
+	        
+	        if(previews != null)
+	        {
+	            // Create a list to hold motion previews
 	            List<AbilityEventPreview_Motion> Motions = new List<AbilityEventPreview_Motion>();
-	            for(int i =0;i<previews.Count;i++)
+	            // Create a list to hold rotation previews
+	            List<AbilityEventPreview_Rotation> Rotations = new List<AbilityEventPreview_Rotation>();
+	            
+	            // Find all motion and rotation previews
+	            for(int i = 0; i < previews.Count; i++)
 	            {
-	                if(previews[i].GetType() == typeof(AbilityEventPreview_Motion))
+	                if(previews[i] != null)
 	                {
-	                    Motions.Add((AbilityEventPreview_Motion)previews[i]);
+	                    if(previews[i].GetType() == typeof(AbilityEventPreview_Motion))
+	                    {
+	                        Motions.Add((AbilityEventPreview_Motion)previews[i]);
+	                    }
+	                    else if(previews[i].GetType() == typeof(AbilityEventPreview_Rotation))
+	                    {
+	                        Rotations.Add((AbilityEventPreview_Rotation)previews[i]);
+	                    }
 	                }
 	            }
-	            for(int i =0;i<Motions.Count;i++)
+	            
+	            // Calculate total motion offset with improved precision
+	            for(int i = 0; i < Motions.Count; i++)
 	            {
-	                CurrentFrameMotions += Motions[i].GetOffsetAtCurrentFrame(timePercentage);
+	                if(Motions[i] != null)
+	                {
+	                    // Get precise offset calculation from each motion preview
+	                    Vector3 motionOffset = Motions[i].GetOffsetAtCurrentFrame(timePercentage);
+	                    // Add to the total with minimized floating point errors
+	                    CurrentFrameMotions.x += motionOffset.x;
+	                    CurrentFrameMotions.y += motionOffset.y;
+	                    CurrentFrameMotions.z += motionOffset.z;
+	                }
 	            }
-	
-	
+	            
+	            // Calculate total rotation effect
+	            for(int i = 0; i < Rotations.Count; i++)
+	            {
+	                if(Rotations[i] != null)
+	                {
+	                    // Get rotation from each rotation preview
+	                    Quaternion rotationOffset = Rotations[i].GetRotationAtCurrentFrame(timePercentage);
+	                    // Combine rotations
+	                    CurrentFrameRotation = rotationOffset * CurrentFrameRotation;
+	                }
+	            }
 	        }
 	    }
 	
@@ -279,12 +379,23 @@ using UnityEngine.SceneManagement;
 	    {
 	        previews = new List<AbilityEventPreview>();
 	
+	        // 获取当前编辑器实例和选中的轨道索引
+	        var editor = CombatEditorUtility.GetCurrentEditor();
+	        int selectedTrackIndex = editor.SelectedTrackIndex - 1; // 转换为0基索引
+	
 	        if (AbilityObj != null)
 	            for (int i = 0; i < AbilityObj.events.Count; i++)
 	            {
 	                var abilityEvent = AbilityObj.events[i];
-                    if (abilityEvent.Obj == null) { AbilityObj.events.RemoveAt(i); i--; continue; }
-	                if (abilityEvent.Obj.IsActive)
+	                if (abilityEvent.Obj == null) { AbilityObj.events.RemoveAt(i); i--; continue; }
+	                
+	                // 检查是否满足以下条件之一:
+	                // 1. 事件是活跃的，并且不是CreateHitBox类型 (所有非HitBox类型的事件都照常预览)
+	                // 2. 事件是活跃的，是CreateHitBox类型，且是当前选中的轨道
+	                bool isHitBox = abilityEvent.Obj is AbilityEventObj_CreateHitBox;
+	                bool isSelectedTrack = (i == selectedTrackIndex);
+	                
+	                if (abilityEvent.Obj.IsActive && (!isHitBox || (isHitBox && isSelectedTrack)))
 	                {
 	                    if (abilityEvent.Obj != null)
 	                    {
@@ -301,11 +412,39 @@ using UnityEngine.SceneManagement;
 	                    }
 	                }
 	            }
+	            
+	        // 确保只有选中轨道的CreateObjWithHandle事件的Handle可见，隐藏其他的
+	        EnsureCreateObjWithHandleVisible();
+	        
 	        foreach (var preview in previews)
 	        {
 	            preview.InitPreview();
 	        }
 	    }
+	    
+	    /// <summary>
+	    /// 确保只有选中轨道的CreateObjWithHandle事件的Handle可见，隐藏其他的
+	    /// </summary>
+	    private void EnsureCreateObjWithHandleVisible()
+	    {
+	        if (AbilityObj != null && AbilityObj.events != null)
+	        {
+	            // 获取当前编辑器实例和选中的轨道索引
+	            var editor = CombatEditorUtility.GetCurrentEditor();
+	            int selectedTrackIndex = editor != null ? editor.SelectedTrackIndex : 0;
+	            
+	            for (int i = 0; i < AbilityObj.events.Count; i++)
+	            {
+	                var evt = AbilityObj.events[i];
+	                if (evt.Obj is AbilityEventObj_CreateObjWithHandle)
+	                {
+	                    // 只有选中的轨道才显示Handle，其他的隐藏
+	                    evt.Previewable = (i + 1 == selectedTrackIndex);
+	                }
+	            }
+	        }
+	    }
+	
 	    /// <summary>
 	    /// Clear All Preview Objects In Scene. 
 	    /// Used when preview object changes, or after compile.
@@ -421,14 +560,16 @@ using UnityEngine.SceneManagement;
 	        {
 	            foreach (var preview in previews)
 	            {
-	
 	                preview.FetchCurrentValues();
-	
+
 	                preview.StartTimeScaledPercentage = GetScaledPercentage(preview.StartTimePercentage);
 	                preview.EndTimeScaledPercentage = GetScaledPercentage(preview.EndTimePercentage);
-	
-	                //Used for dragging to preview. SomeTimes, preview need datas when on start, for example, the particle position need to know the position on EventStart.
-	                if (!(editor.IsPlaying || editor.IsLooping))
+
+	                // 编辑器模式特殊处理
+	                bool isEditorMode = !(editor.IsPlaying || editor.IsLooping);
+	                
+	                // 在拖动预览时的处理
+	                if (isEditorMode)
 	                {
 	                    if (preview.NeedStartFrameValue())
 	                    {
@@ -436,7 +577,7 @@ using UnityEngine.SceneManagement;
 	                    }
 	                    preview.GetStartFrameDataBeforePreview();
 	                }
-	                //Used for running preview.Static particle need to reset position because of the motion event.
+	                // 播放模式下的处理
 	                else
 	                {
 	                    if (preview.NeedStartFrameValue() && preview.IsOnStartFrame)
@@ -450,11 +591,10 @@ using UnityEngine.SceneManagement;
 	            {
 	                preview.StartTimeScaledPercentage = GetScaledPercentage(preview.StartTimePercentage);
 	                preview.EndTimeScaledPercentage = GetScaledPercentage(preview.EndTimePercentage);
-	
+
 	                preview.PreviewRunning(PercentageTime);
-	
+
 	                preview.PreviewRunningInScale(GetScaledPercentage(PercentageTime));
-	
 	            }
 	        }
 	        else

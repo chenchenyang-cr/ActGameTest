@@ -152,11 +152,14 @@ namespace CombatEditor
         }
         public void OnAddCombat(Rect buttonRect, int GroupIndex)
         {
-
             AssetDatabase.SaveAssets();
             SerializedObject so = new SerializedObject(SelectedController);
             SerializedProperty combatDatas = so.FindProperty("CombatDatas");
             SerializedProperty ObjsProperty = combatDatas.GetArrayElementAtIndex(GroupIndex).FindPropertyRelative("CombatObjs");
+            
+            // Register undo before adding combat object
+            Undo.RecordObject(SelectedController, "Add Combat Object");
+            
             ObjsProperty.arraySize++;
             SerializedProperty TargetObj = ObjsProperty.GetArrayElementAtIndex(ObjsProperty.arraySize - 1);
             TargetObj.objectReferenceValue = null;
@@ -180,7 +183,19 @@ namespace CombatEditor
         {
             if (_previewer != null)
             {
+                // 设置一个标志，表示这是由编辑器操作（如保存或编译）触发的
+                if (_previewer.editor != null)
+                {
+                    _previewer.editor.IsEditorOperation = true;
+                }
+                
                 _previewer.OnDestroyPreview();
+                
+                // 重置标志
+                if (_previewer.editor != null)
+                {
+                    _previewer.editor.IsEditorOperation = false;
+                }
             }
             _previewer = null;
         }
@@ -218,6 +233,9 @@ namespace CombatEditor
 
             SerializedProperty AfterListProperty = combatDatas.GetArrayElementAtIndex(SwapGroupIndexAfter).FindPropertyRelative("CombatObjs");
 
+            // Register undo before swapping ability objects
+            Undo.RecordObject(SelectedController, "Swap Ability Object");
+
             var Obj = BeforeListProperty.GetArrayElementAtIndex(SwapArrayIndexBefore).objectReferenceValue;
 
             //Debug.Log();
@@ -253,6 +271,10 @@ namespace CombatEditor
             so.Update();
             SerializedProperty combatDatas = so.FindProperty("CombatDatas");
             SerializedProperty ObjsProperty = combatDatas.GetArrayElementAtIndex(i1).FindPropertyRelative("CombatObjs");
+            
+            // Register undo before deleting ability object
+            Undo.RecordObject(SelectedController, "Delete Ability Object");
+            
             ObjsProperty.DeleteArrayElementAtIndex(i2);
             so.ApplyModifiedProperties();
         }

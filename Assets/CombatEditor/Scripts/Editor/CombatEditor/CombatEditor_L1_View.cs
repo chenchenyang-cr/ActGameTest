@@ -7,6 +7,8 @@ namespace CombatEditor
 {
     public partial class CombatEditor
     {
+        public Rect UndoButtonRect;
+        
         public void PaintL1()
         {
             float DefaultWidth = EditorGUIUtility.labelWidth;
@@ -18,6 +20,9 @@ namespace CombatEditor
             PaintAbilities();
             PaintL1DragTargetRec();
             HandleL1Drag();
+
+            // Add undo button to the editor UI
+            PaintUndoButton();
 
             ElementCount = HeightCounter;
             GUI.EndScrollView();
@@ -211,6 +216,19 @@ namespace CombatEditor
                 combatDatas.GetArrayElementAtIndex(combatDatas.arraySize - 1).FindPropertyRelative("Label").stringValue = "F2_Rename";
 
                 so.ApplyModifiedProperties();
+            }
+        }
+
+        public void PaintUndoButton()
+        {
+            // Position the undo button in a convenient location
+            UndoButtonRect = new Rect(position.width - Width_Inspector - 80, 5, 70, 30);
+            
+            // Draw the undo button
+            if (GUI.Button(UndoButtonRect, "Undo"))
+            {
+                Undo.PerformUndo();
+                OnAnimEventChanges(); // Refresh views after undo
             }
         }
     }

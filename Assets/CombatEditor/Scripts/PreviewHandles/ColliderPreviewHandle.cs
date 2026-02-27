@@ -9,7 +9,7 @@ namespace CombatEditor {
     public class ColliderPreviewHandle : PreviewerOnObject
 	{
 	    public AbilityEventPreview_CreateHitBox colliderPreview;
-	    AbilityEventObj_CreateHitBox EventObj => colliderPreview._EventObj as AbilityEventObj_CreateHitBox;
+	    AbilityEventObj_CreateHitBox EventObj => colliderPreview.Obj;
 
 
 	    BoxBoundsHandle boxHandle;
@@ -28,7 +28,7 @@ namespace CombatEditor {
 	        {
 	            boxHandle = new BoxBoundsHandle();
 	            boxHandle.axes = PrimitiveBoundsHandle.Axes.All;
-	            boxHandle.size = EventObj.ColliderSize;
+	            boxHandle.size = EventObj.hitBoxSize;
 	            boxHandle.handleColor = Color.green;
 	            boxHandle.wireframeColor = Color.green;
 	        }
@@ -39,8 +39,8 @@ namespace CombatEditor {
 	        {
 	            capsuleHandle = new CapsuleBoundsHandle();
 	            capsuleHandle.axes = PrimitiveBoundsHandle.Axes.All;
-	            capsuleHandle.radius = EventObj.Radius;
-	            capsuleHandle.height = EventObj.Height;
+	            capsuleHandle.radius = EventObj.radius;
+	            capsuleHandle.height = EventObj.height;
 	            capsuleHandle.handleColor = Color.green;
 	            capsuleHandle.wireframeColor = Color.green;
 	        }
@@ -49,7 +49,7 @@ namespace CombatEditor {
 	        {
 	            sphereHandle = new SphereBoundsHandle();
 	            sphereHandle.axes = PrimitiveBoundsHandle.Axes.All;
-	            sphereHandle.radius = EventObj.Radius;
+	            sphereHandle.radius = EventObj.radius;
 	            sphereHandle.handleColor = Color.green;
 	            sphereHandle.wireframeColor = Color.green;
 	        }
@@ -85,9 +85,9 @@ namespace CombatEditor {
 	            if (boxHandle != null)
 	            {
 	                boxHandle.handleColor = Color.green;
-	                boxHandle.wireframeColor = Color.red;
-	                boxHandle.size = EventObj.ColliderSize;
-	                boxHandle.center = EventObj.ColliderOffset;
+	                boxHandle.wireframeColor = Color.green;
+	                boxHandle.size = EventObj.hitBoxSize;
+	                boxHandle.center = EventObj.hitBoxOffset;
 	                boxHandle.midpointHandleSizeFunction = (pos) =>
 	                {
 	                    return 2 * PrimitiveBoundsHandle.DefaultMidpointHandleSizeFunction(pos);
@@ -98,19 +98,19 @@ namespace CombatEditor {
 	            }
 	            if (capsuleHandle != null)
 	            {
-	                capsuleHandle.radius = EventObj.Radius;
-	                capsuleHandle.height = EventObj.Height;
+	                capsuleHandle.radius = EventObj.radius;
+	                capsuleHandle.height = EventObj.height;
 	                capsuleHandle.center = Vector3.zero;
-	                //capsuleHandle.center = EventObj.ColliderOffset;
-	                capsuleHandle.center = new Vector3(0, EventObj.ColliderOffset.y, 0);
+	                //capsuleHandle.center = EventObj.hitBoxOffset;
+	                capsuleHandle.center = new Vector3(0, EventObj.hitBoxOffset.y, 0);
 	                capsuleHandle.DrawHandle();
 	            }
 	
 	            if(sphereHandle!=null)
 	            {
-	                sphereHandle.radius = EventObj.Radius;
+	                sphereHandle.radius = EventObj.radius;
 	                sphereHandle.center = Vector3.zero;
-	                //sphereHandle.center = EventObj.ColliderOffset;
+	                //sphereHandle.center = EventObj.hitBoxOffset;
 	                sphereHandle.DrawHandle();
 	            }
 	
@@ -126,20 +126,20 @@ namespace CombatEditor {
 	        {
 	            Undo.RecordObject(EventObj, "SetHandle!");
 	
-	            EventObj.ColliderOffset = handleCenter;
+	            EventObj.hitBoxOffset = handleCenter;
 	
 	            if (boxHandle != null)
 	            {
-	                EventObj.ColliderSize = boxHandle.size;
+	                EventObj.hitBoxSize = boxHandle.size;
 	            }
 	            if (capsuleHandle != null)
 	            {
-	                EventObj.Radius = capsuleHandle.radius;
-	                EventObj.Height = capsuleHandle.height;
+	                EventObj.radius = capsuleHandle.radius;
+	                EventObj.height = capsuleHandle.height;
 	            }
 	            if(sphereHandle!=null)
 	            {
-	                EventObj.Radius = sphereHandle.radius;
+	                EventObj.radius = sphereHandle.radius;
 	            }
 	
 	        }

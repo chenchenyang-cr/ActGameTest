@@ -37,7 +37,7 @@ using UnityEngine;
 	        {
 	            transform.position = NodeTrans.position + NodeTrans.rotation * PosOffset;
 	        }
-	        if (FollowRotation && FollowPos)
+	        if (FollowRotation)
 	        {
 	            transform.rotation = NodeTrans.rotation * RotOverNode;
 	        }

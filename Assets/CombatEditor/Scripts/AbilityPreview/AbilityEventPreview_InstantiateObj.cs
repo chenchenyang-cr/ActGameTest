@@ -48,7 +48,18 @@ using UnityEditor;
 	    {
 	        InstantiatedObj = (GameObject)PrefabUtility.InstantiatePrefab(EventObj.ObjData.TargetObj);
 	        InstantiatedObj.transform.rotation = _combatController._animator.transform.rotation * EventObj.ObjData.Rot;
-	        InstantiatedObj.transform.SetParent(previewGroup.transform);
+	        
+	        // Set parent based on custom parent settings
+	        if (EventObj.ObjData.UseCustomParent && EventObj.ObjData.CustomParentTransform != null)
+	        {
+	            // Use custom parent if specified
+	            InstantiatedObj.transform.SetParent(EventObj.ObjData.CustomParentTransform);
+	        }
+	        else
+	        {
+	            // Default behavior: use preview group as parent
+	            InstantiatedObj.transform.SetParent(previewGroup.transform);
+	        }
 	    }
 	    public void CreateHandle()
 	    {
@@ -87,9 +98,42 @@ using UnityEditor;
 	    public void DataToHandleAtStartFrame()
 	    {
 	        ControllerStartPosition = CombatGlobalEditorValue.CharacterRootCenterAtCurrentFrame;
-	
 	        AnimatorRotAtStartFrame = _combatController.GetNodeTranform(CharacterNode.NodeType.Animator).rotation;
-	        if (EventObj.ObjData.TargetNode == CharacterNode.NodeType.Animator)
+	        
+	        if (EventObj.ObjData.UseCustomTarget && !string.IsNullOrEmpty(EventObj.ObjData.CustomTargetName))
+	        {
+	            // Use custom target transform by name if specified
+	            GameObject targetGameObject = GameObject.Find(EventObj.ObjData.CustomTargetName);
+	            if (targetGameObject != null)
+	            {
+	                NodePosAtStartFrame = targetGameObject.transform.position;
+	                NodeRotAtStartFrame = targetGameObject.transform.rotation;
+	            }
+	            else
+	            {
+	                Debug.LogWarning($"Preview: Custom target '{EventObj.ObjData.CustomTargetName}' not found in scene, using default node");
+	                if (EventObj.ObjData.TargetNode == CharacterNode.NodeType.Animator)
+	                {
+	                    NodePosAtStartFrame = ControllerStartPosition;
+	                    NodeRotAtStartFrame = AnimatorRotAtStartFrame;
+	                }
+	                else
+	                {
+	                    Transform trans = _combatController.GetNodeTranform(EventObj.ObjData.TargetNode);
+	                    if (trans != null)
+	                    {
+	                        NodePosAtStartFrame = trans.position;
+	                        NodeRotAtStartFrame = trans.rotation;
+	                    }
+	                    else
+	                    {
+	                        NodePosAtStartFrame = ControllerStartPosition;
+	                        NodeRotAtStartFrame = AnimatorRotAtStartFrame;
+	                    }
+	                }
+	            }
+	        }
+	        else if (EventObj.ObjData.TargetNode == CharacterNode.NodeType.Animator)
 	        {
 	            NodePosAtStartFrame = ControllerStartPosition;
 	            NodeRotAtStartFrame = AnimatorRotAtStartFrame;
@@ -99,8 +143,13 @@ using UnityEditor;
 	            Transform trans = _combatController.GetNodeTranform(EventObj.ObjData.TargetNode);
 	            if (trans != null)
 	            {
-	                NodePosAtStartFrame = CombatGlobalEditorValue.CharacterRootCenterAtCurrentFrame + (trans.position - _combatController._animator.transform.position - CombatGlobalEditorValue.CurrentRootMotionOffset);
+	                NodePosAtStartFrame = trans.position;
 	                NodeRotAtStartFrame = trans.rotation;
+	            }
+	            else
+	            {
+	                NodePosAtStartFrame = ControllerStartPosition;
+	                NodeRotAtStartFrame = AnimatorRotAtStartFrame;
 	            }
 	        }
 	        if (handle != null)

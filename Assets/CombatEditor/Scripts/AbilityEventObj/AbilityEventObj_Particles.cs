@@ -15,6 +15,15 @@ using UnityEngine;
 	    public CharacterNode.NodeType TargetNode;
 	    public bool FollowNode = true;
 	    public bool RotateByNode;
+	    public bool UseCustomTarget = false;
+	    [Tooltip("Name of the target object in the scene")]
+	    public string CustomTargetName = "";
+	
+	    [Header("Parent Object Settings")]
+	    [Tooltip("If enabled, the created object will be a child of the specified parent transform")]
+	    public bool UseCustomParent = false;
+	    [Tooltip("The parent transform for the created object. If null, the object will be created at root level")]
+	    public Transform CustomParentTransform;
 	
 	    public GameObject CreateObject( CombatController controller)
 	    {
@@ -24,8 +33,36 @@ using UnityEngine;
 	            _obj = Object.Instantiate(TargetObj);
 	
 	            var follower = _obj.AddComponent<NodeFollower>();
+	            Transform targetTransform = null;
+	            
+	            if (UseCustomTarget && !string.IsNullOrEmpty(CustomTargetName))
+	            {
+	                // Find target by name in the scene
+	                GameObject targetGameObject = GameObject.Find(CustomTargetName);
+	                if (targetGameObject != null)
+	                {
+	                    targetTransform = targetGameObject.transform;
+	                    // Set the created object as a child of the custom target
+	                    _obj.transform.SetParent(targetTransform);
+	                }
+	                else
+	                {
+	                    targetTransform = controller.GetNodeTranform(TargetNode);
+	                }
+	            }
+	            else
+	            {
+	                targetTransform = controller.GetNodeTranform(TargetNode);
+	                
+	                // Set parent if UseCustomParent is enabled and we're not using custom target
+	                if (UseCustomParent && CustomParentTransform != null)
+	                {
+	                    _obj.transform.SetParent(CustomParentTransform);
+	                }
+	            }
+	                
 	            follower.Init(
-	                controller.GetNodeTranform(TargetNode),
+	                targetTransform,
 	                Offset,
 	                Rot,
 	                FollowNode,
