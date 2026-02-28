@@ -278,6 +278,20 @@ namespace CombatEditor
             if (EditorGUI.EndChangeCheck())
             {
                 EditorUtility.SetDirty(hitBoxObj);
+
+                // 参数变化后主动刷新 CombatEditor 预览与场景视图，
+                // 避免出现“Inspector 数值已改但 Scene 可视化没跟上”
+                if (CombatEditorUtility.EditorExist())
+                {
+                    CombatEditor editor = CombatEditorUtility.GetCurrentEditor();
+                    if (editor != null)
+                    {
+                        editor.RequirePreviewReload();
+                        editor.Repaint();
+                    }
+                }
+
+                SceneView.RepaintAll();
             }
         }
         

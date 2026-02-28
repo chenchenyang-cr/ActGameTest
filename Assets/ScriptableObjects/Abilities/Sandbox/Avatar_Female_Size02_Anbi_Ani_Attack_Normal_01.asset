@@ -1,5 +1,56 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8855088276858164541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75df4da46dd09c44bb149336749072c8, type: 3}
+  m_Name: CreateHitBox
+  m_EditorClassIdentifier: 
+  IsActive: 1
+  bindTransformName: Anbi_Weapon_02
+  autoSearchBindTransform: 1
+  hitBoxOffset: {x: -0.4, y: -0, z: 0}
+  hitBoxSize: {x: 0.9, y: 0.2, z: 0.06}
+  hitBoxShape: 0
+  radius: 0.76
+  height: 2.16
+  hitTags:
+  - Enemy
+  hitBoxColor: {r: 0.19893432, g: 1, b: 0, a: 1}
+  destroyOnHit: 0
+  maxHits: 0
+--- !u!114 &-7338312988139158429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6952d0097007041e1b5520379c50700d, type: 3}
+  m_Name: AE_AttackChainCheck
+  m_EditorClassIdentifier: 
+  IsActive: 1
+  targetMode: 0
+  specificTarget: {fileID: 0}
+  targetClassName: MoveExecutor
+  methodName: AE_AttackChainCheck()
+  parameters: []
+  boundObjectPath: "\u5B89\u6BD4"
+  boundComponentTypeName: MoveExecutor, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+    PublicKeyToken=null
+  boundComponentIndex: 0
+  searchValue: 
+  executionInterval: 0
+  executeOnStart: 1
+  executeOnEnd: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18,7 +69,7 @@ MonoBehaviour:
   loopCount: 0
   events:
   - EventTime: 0
-    EventRange: {x: 0.31707317, y: 0.85365856}
+    EventRange: {x: 0.29268292, y: 0.9512195}
     EventMultiRange:
     - 0.2
     - 0.4
@@ -32,7 +83,22 @@ MonoBehaviour:
       conditionValue: 0
       conditionMode: 0
       interfaceConditionId: 
-  - EventTime: 0.85365856
+  - EventTime: 0
+    EventRange: {x: 0.58536583, y: 0.9756098}
+    EventMultiRange:
+    - 0.2
+    - 0.4
+    - 0.6
+    - 0.8
+    Previewable: 1
+    Obj: {fileID: -7338312988139158429}
+    condition:
+      hasCondition: 0
+      conditionType: 0
+      conditionValue: 0
+      conditionMode: 0
+      interfaceConditionId: 
+  - EventTime: 1
     EventRange: {x: 0, y: 1}
     EventMultiRange:
     - 0.2
@@ -62,6 +128,121 @@ MonoBehaviour:
       conditionValue: 0
       conditionMode: 0
       interfaceConditionId: 
+  - EventTime: 0
+    EventRange: {x: 0.36585367, y: 1}
+    EventMultiRange:
+    - 0.2
+    - 0.4
+    - 0.6
+    - 0.8
+    Previewable: 1
+    Obj: {fileID: -8855088276858164541}
+    condition:
+      hasCondition: 0
+      conditionType: 0
+      conditionValue: 0
+      conditionMode: 0
+      interfaceConditionId: 
+  - EventTime: 0.31707317
+    EventRange: {x: 0, y: 1}
+    EventMultiRange:
+    - 0.2
+    - 0.4
+    - 0.6
+    - 0.8
+    Previewable: 0
+    Obj: {fileID: 2967964369703626062}
+    condition:
+      hasCondition: 0
+      conditionType: 0
+      conditionValue: 0
+      conditionMode: 0
+      interfaceConditionId: 
+  - EventTime: 0
+    EventRange: {x: 0.70731705, y: 1}
+    EventMultiRange:
+    - 0.2
+    - 0.4
+    - 0.6
+    - 0.8
+    Previewable: 1
+    Obj: {fileID: 1099641874330867098}
+    condition:
+      hasCondition: 0
+      conditionType: 0
+      conditionValue: 0
+      conditionMode: 0
+      interfaceConditionId: 
+--- !u!114 &1099641874330867098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e2dd982f5c43b48b940242e405acc4, type: 3}
+  m_Name: AnimSpeed
+  m_EditorClassIdentifier: 
+  IsActive: 1
+  Speed: 0.35
+  UseCurveLerp: 0
+  SpeedCurve:
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    StartValue: 0.3
+    EndValue: 0.3
+--- !u!114 &2967964369703626062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca2229d21ed65194bac74b8298b11290, type: 3}
+  m_Name: Particles
+  m_EditorClassIdentifier: 
+  IsActive: 1
+  ObjData:
+    TargetObj: {fileID: 1414806271779053125, guid: 717fff9c9b9fef247877b1e27f1b2881, type: 3}
+    controlType: 0
+    Offset: {x: 0, y: 0.7, z: 0}
+    Rot: {x: 0.82981753, y: -0.000000036272464, z: -0.5580348, w: 0.000000024392493}
+    TargetNode: 0
+    FollowNode: 1
+    RotateByNode: 0
+    UseCustomTarget: 0
+    CustomTargetName: 
+    UseCustomParent: 0
+    CustomParentTransform: {fileID: 0}
+  DestroyOnEnd: 1
+  DestroyDelay: 0
+  TimeType: 1
 --- !u!114 &3514997991092938264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,7 +282,7 @@ MonoBehaviour:
   m_Name: AnimSpeed
   m_EditorClassIdentifier: 
   IsActive: 1
-  Speed: 1.5
+  Speed: 1.4
   UseCurveLerp: 0
   SpeedCurve:
     curve:

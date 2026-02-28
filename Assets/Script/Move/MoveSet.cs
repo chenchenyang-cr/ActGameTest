@@ -33,6 +33,15 @@ public class MoveSet : ScriptableObject
         return null;
     }
 
+    public MoveData GetNextLightFromEnd(MoveData currentEnd)
+    {
+        if (currentEnd == A1End) return A2;
+        if (currentEnd == A2End) return A3;
+        if (currentEnd == A3End) return A4;
+        if (currentEnd == A4End) return A1;
+        return null;
+    }
+
     public bool IsLightAttack(MoveData move)
     {
         return move != null && (move == A1 || move == A2 || move == A3 || move == A4);

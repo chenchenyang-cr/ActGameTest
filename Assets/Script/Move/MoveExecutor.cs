@@ -26,6 +26,8 @@ public class MoveExecutor : MonoBehaviour
     private bool _restartComboRequested;
     private bool _comboWindowOpen;
     private int _comboWindowHeartbeatFrame = -1;
+    private bool _attackChainCheckWindowOpen;
+    private int _attackChainCheckWindowHeartbeatFrame = -1;
     private bool _endInterruptWindowOpen;
     private int _endInterruptWindowHeartbeatFrame = -1;
 
@@ -39,6 +41,10 @@ public class MoveExecutor : MonoBehaviour
         // Combo window stays valid only while AE_ComboWindowOpen keeps being called.
         if (_comboWindowOpen && _comboWindowHeartbeatFrame != Time.frameCount)
             _comboWindowOpen = false;
+
+        // Attack chain-check window stays valid only while AE_AttackChainCheck keeps being called.
+        if (_attackChainCheckWindowOpen && _attackChainCheckWindowHeartbeatFrame != Time.frameCount)
+            _attackChainCheckWindowOpen = false;
 
         // End interrupt window stays valid only while AE_EndInterruptWindowOpen keeps being called.
         if (_endInterruptWindowOpen && _endInterruptWindowHeartbeatFrame != Time.frameCount)
@@ -56,7 +62,7 @@ public class MoveExecutor : MonoBehaviour
         if (CurrentMove == null)
             return;
 
-        if (IsCurrentLightAttack() && _comboWindowOpen)
+        if (IsCurrentLightAttack() && (_comboWindowOpen || _attackChainCheckWindowOpen))
         {
             _chainRequested = true;
             return;
@@ -115,6 +121,8 @@ public class MoveExecutor : MonoBehaviour
         _restartComboRequested = false;
         _comboWindowOpen = false;
         _comboWindowHeartbeatFrame = -1;
+        _attackChainCheckWindowOpen = false;
+        _attackChainCheckWindowHeartbeatFrame = -1;
         _endInterruptWindowOpen = false;
         _endInterruptWindowHeartbeatFrame = -1;
 
@@ -140,6 +148,8 @@ public class MoveExecutor : MonoBehaviour
         _restartComboRequested = false;
         _comboWindowOpen = false;
         _comboWindowHeartbeatFrame = -1;
+        _attackChainCheckWindowOpen = false;
+        _attackChainCheckWindowHeartbeatFrame = -1;
         _endInterruptWindowOpen = false;
         _endInterruptWindowHeartbeatFrame = -1;
     }
@@ -203,13 +213,22 @@ public class MoveExecutor : MonoBehaviour
     {
         if (!IsCurrentLightAttack()) return;
 
-        if (TryHandleChainFromAttackEndEvent())
-            return;
-
         if (TryEnterCurrentLightEnd())
             return;
 
         ExitMove();
+    }
+
+    // Call this event every frame during the desired chain-check window, before AE_AttackMoveEnd.
+    // Within this window, any attack input can request chaining to next light attack.
+    public void AE_AttackChainCheck()
+    {
+        if (!IsCurrentLightAttack()) return;
+
+        _attackChainCheckWindowOpen = true;
+        _attackChainCheckWindowHeartbeatFrame = Time.frameCount;
+
+        TryHandleChainFromAttackEndEvent();
     }
 
     public void AE_EndMoveEnd()

@@ -95,11 +95,12 @@
     <Compile Include="Assets\CombatEditor\Scripts\Editor\CombatEditor\CombatEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Editor\EventConditionEditorWindow.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Editor\CombatInspector.cs" />
+    <Compile Include="Assets\Hovl Studio\HSFiles\Scripts\Editor\ShaderChanger.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_CreateHitBoxEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_SFXEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_AnimatorVariableEditor.cs" />
-    <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_ParticleTrackEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_ScriptMethodEditor.cs" />
+    <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_ParticleTrackEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\Editor\AbilityEventObj_RotationEditor.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Editor\ScriptableObjectSyncUtility.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Editor\HandleSelectorPropertyDrawer.cs" />

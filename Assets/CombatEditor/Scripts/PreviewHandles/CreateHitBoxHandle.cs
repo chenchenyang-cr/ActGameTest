@@ -23,6 +23,37 @@ namespace CombatEditor
         private Color handleColor = new Color(0f, 0f, 1f, 0.8f); // 蓝色
         private Color wireColor = new Color(0f, 0f, 1f, 1f); // 蓝色
 
+        private void SyncHandleColorsFromEvent()
+        {
+            if (eventObj == null) return;
+
+            // 统一由事件配置驱动可视化颜色，避免“Inspector 改色但 Scene 不变”
+            Color baseColor = eventObj.hitBoxColor;
+            float wireAlpha = Mathf.Clamp01(baseColor.a + 0.4f);
+            float handleAlpha = Mathf.Clamp01(baseColor.a + 0.25f);
+
+            wireColor = new Color(baseColor.r, baseColor.g, baseColor.b, wireAlpha);
+            handleColor = new Color(baseColor.r, baseColor.g, baseColor.b, handleAlpha);
+
+            if (boxHandle != null)
+            {
+                boxHandle.wireframeColor = wireColor;
+                boxHandle.handleColor = handleColor;
+            }
+
+            if (sphereHandle != null)
+            {
+                sphereHandle.wireframeColor = wireColor;
+                sphereHandle.handleColor = handleColor;
+            }
+
+            if (capsuleHandle != null)
+            {
+                capsuleHandle.wireframeColor = wireColor;
+                capsuleHandle.handleColor = handleColor;
+            }
+        }
+
         private void OnEnable()
         {
             // 确保在编辑器中该组件被启用后初始化
@@ -62,6 +93,8 @@ namespace CombatEditor
             if (preview == null || eventObj == null)
                 return;
 
+            SyncHandleColorsFromEvent();
+
             switch (eventObj.hitBoxShape)
             {
                 case HitBox.HitBoxShape.Box:
@@ -92,8 +125,8 @@ namespace CombatEditor
         private void InitSphereHandle()
         {
             sphereHandle = new SphereBoundsHandle();
-            // 只允许控制半径，不控制位置
-            sphereHandle.axes = PrimitiveBoundsHandle.Axes.None;
+            // None 在部分 Unity 版本下会导致句柄完全不绘制，这里保持可见性
+            sphereHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y | PrimitiveBoundsHandle.Axes.Z;
             sphereHandle.radius = eventObj.radius;
             sphereHandle.center = eventObj.hitBoxOffset;
             sphereHandle.wireframeColor = wireColor;
@@ -103,8 +136,8 @@ namespace CombatEditor
         private void InitCapsuleHandle()
         {
             capsuleHandle = new CapsuleBoundsHandle();
-            // 只允许控制尺寸，不控制位置
-            capsuleHandle.axes = PrimitiveBoundsHandle.Axes.None;
+            // None 在部分 Unity 版本下会导致句柄完全不绘制，这里保持可见性
+            capsuleHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y | PrimitiveBoundsHandle.Axes.Z;
             capsuleHandle.radius = eventObj.radius;
             capsuleHandle.height = eventObj.height;
             capsuleHandle.center = eventObj.hitBoxOffset;
@@ -116,6 +149,8 @@ namespace CombatEditor
         {
             if (preview == null || eventObj == null)
                 return;
+
+            SyncHandleColorsFromEvent();
 
             // 如果形状变化，重新初始化handle
             if ((boxHandle != null && eventObj.hitBoxShape != HitBox.HitBoxShape.Box) ||
@@ -154,7 +189,10 @@ namespace CombatEditor
                 Handles.DrawSolidDisc(worldPosition, Camera.current.transform.forward, handleSize);
                 
                 // 位置控制手柄
-                Vector3 newPosition = Handles.PositionHandle(worldPosition, transform.rotation);
+                Quaternion positionHandleRotation = Tools.pivotRotation == PivotRotation.Local
+                    ? transform.rotation
+                    : Quaternion.identity;
+                Vector3 newPosition = Handles.PositionHandle(worldPosition, positionHandleRotation);
                 
                 // 如果位置变化，更新hitBoxOffset
                 if (worldPosition != newPosition)

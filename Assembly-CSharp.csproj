@@ -60,8 +60,8 @@
     <Analyzer Include="D:\UnityHub\Unity 2022.3.62f3c1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_ExecuteMethod.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Examples\RuntimeMotionOverride.cs" />
+    <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_ExecuteMethod.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\EventManager.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AnimatorVariableExample.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\EventUtils.cs" />
@@ -82,8 +82,8 @@
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_Rotation.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\Utils\DynamicTrailGenerator.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\CombatEvent.cs" />
-    <Compile Include="Assets\CombatEditor\Scripts\Examples\MotionOffsetAccessExample.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\ConditionSystem\IEventCondition.cs" />
+    <Compile Include="Assets\CombatEditor\Scripts\Examples\MotionOffsetAccessExample.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\PreviewHandles\PreviewRotationHandle.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_States.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\CombatEvent\CombatEventReceiver.cs" />
@@ -138,6 +138,7 @@
     <Compile Include="Assets\CombatEditor\Scripts\SandBox\FollowTarget.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventObj_HitStop.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventEffect.cs" />
+    <Compile Include="Assets\Hovl Studio\HSFiles\Scripts\For demo scenes\HS_CameraHolder.cs" />
     <Compile Include="Assets\CombatEditor\Scripts\AbilityPreview\AbilityEventPreview_DynamicTrail.cs" />
     <Compile Include="Assets\Script\playerController\ThirdPersonOrbitCamera.cs" />
     <Compile Include="Assets\Script\Move\MoveExecutor.cs" />
@@ -162,10 +163,17 @@
     <None Include="Assets\CombatEditor\Materials\Shaders\TestUnlitShader.shader" />
     <None Include="Assets\CombatEditor\Scripts\AbilityEventObj\AbilityEventTemplate.txt" />
     <None Include="Assets\CombatEditor\Materials\Shaders\ScalableRoundShader.shader" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\DissolveNoise.shader" />
     <None Include="Assets\Shader\二次元\UnityGenshinToonShader-main\Shaders\ToonInput.hlsl" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\Add_Fresnel.shader" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\Distortion.shader" />
     <None Include="Assets\CombatEditor\Scripts\AbilityPreview\AbilityEventPreview_Template.txt" />
     <None Include="Assets\CombatEditor\Materials\Shaders\TestSurfaceShader.shader" />
     <None Include="Assets\CombatEditor\Models\Swords\Shader\ToonSwords.shader" />
+    <None Include="Assets\Hovl Studio\Sword slash VFX\Demo scene\Readme.txt" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\Lightning.shader" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\BlendDistort.shader" />
+    <None Include="Assets\Hovl Studio\HSFiles\Shaders\Scroll.shader" />
     <None Include="Assets\Shader\二次元\UnityGenshinToonShader-main\Shaders\URPGenshinToon.shader" />
     <None Include="Assets\CombatEditor\Materials\Shaders\ChargeOrb.shader" />
     <None Include="Assets\CombatEditor\Materials\Shaders\TransparentSelfCullShader.shader" />
